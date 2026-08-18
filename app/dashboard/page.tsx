@@ -1,48 +1,40 @@
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import StatCard from "@/components/ui/StatCard";
+
 const stats = [
   {
     label: "Total Applications",
-    value: "24",
+    value: 24,
+    description: "All tracked applications",
   },
   {
     label: "Interviews",
-    value: "5",
+    value: 5,
+    description: "Upcoming and completed",
   },
   {
     label: "Assessments",
-    value: "3",
+    value: 3,
+    description: "Technical assessments",
   },
   {
     label: "Offers",
-    value: "1",
+    value: 1,
+    description: "Active offers",
   },
 ];
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <nav className="border-b border-slate-800">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <a href="/dashboard" className="font-bold">
-            JobPilot AI
-          </a>
-
-          <div className="flex gap-6 text-sm text-slate-400">
-            <a href="/dashboard" className="hover:text-white">
-              Dashboard
-            </a>
-
-            <a href="/jobs" className="hover:text-white">
-              Jobs
-            </a>
-          </div>
-        </div>
-      </nav>
-      <div className="mx-auto max-w-7xl px-6 py-10">
+    <DashboardLayout>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div>
-          <p className="text-sm text-blue-400">JobPilot AI</p>
+          <p className="text-sm font-medium text-blue-400">
+            Overview
+          </p>
 
           <h1 className="mt-2 text-3xl font-bold">
-            Good morning, Tariq
+            Dashboard
           </h1>
 
           <p className="mt-2 text-slate-400">
@@ -50,18 +42,14 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat) => (
-            <div
+            <StatCard
               key={stat.label}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-6"
-            >
-              <p className="text-sm text-slate-400">{stat.label}</p>
-
-              <p className="mt-3 text-3xl font-bold">
-                {stat.value}
-              </p>
-            </div>
+              label={stat.label}
+              value={stat.value}
+              description={stat.description}
+            />
           ))}
         </div>
 
@@ -75,6 +63,6 @@ export default function DashboardPage() {
           </p>
         </section>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }

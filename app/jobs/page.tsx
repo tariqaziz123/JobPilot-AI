@@ -1,27 +1,14 @@
+import DashboardLayout from "@/components/layout/DashboardLayout";
+
 export default function JobsPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <nav className="border-b border-slate-800">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <a href="/dashboard" className="font-bold">
-            JobPilot AI
-          </a>
-
-          <div className="flex gap-6 text-sm text-slate-400">
-            <a href="/dashboard" className="hover:text-white">
-              Dashboard
-            </a>
-
-            <a href="/jobs" className="hover:text-white">
-              Jobs
-            </a>
-          </div>
-        </div>
-      </nav>
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="flex items-center justify-between">
+    <DashboardLayout>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm text-blue-400">JobPilot AI</p>
+            <p className="text-sm font-medium text-blue-400">
+              Workspace
+            </p>
 
             <h1 className="mt-2 text-3xl font-bold">
               Job Applications
@@ -32,7 +19,7 @@ export default function JobsPage() {
             </p>
           </div>
 
-          <button className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-500">
+          <button className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-500">
             Add Job
           </button>
         </div>
@@ -47,6 +34,6 @@ export default function JobsPage() {
           </p>
         </div>
       </div>
-    </main>
+    </DashboardLayout>
   );
 }
