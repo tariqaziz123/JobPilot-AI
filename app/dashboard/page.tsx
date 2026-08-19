@@ -1,5 +1,6 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import StatCard from "@/components/ui/StatCard";
+import ApiStatus from "@/components/dashboard/ApiStatus";
 
 const stats = [
   {
@@ -51,6 +52,10 @@ export default function DashboardPage() {
               description={stat.description}
             />
           ))}
+        </div>
+
+        <div className="mt-8">
+            <ApiStatus />
         </div>
 
         <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
