@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 
 import { prisma } from "../config/prisma.js";
 import { env } from "../config/env.js";
+import { AuthRequest } from "../middleware/auth.middleware.js";
 
 export const signup = async (
   req: Request,
@@ -146,6 +147,51 @@ export const login = async (
     return res.status(500).json({
       success: false,
       message: "Failed to login",
+    });
+  }
+};
+
+export const getMe = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: req.user.userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error("Failed to fetch current user:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch current user",
     });
   }
 };

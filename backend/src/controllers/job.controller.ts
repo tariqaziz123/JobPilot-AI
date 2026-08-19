@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { AuthRequest } from "../middleware/auth.middleware.js";
 
 export const createJob = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ) => {
   try {
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     const {
-      userId,
       company,
       title,
       location,
@@ -17,16 +24,16 @@ export const createJob = async (
       source,
     } = req.body;
 
-    if (!userId || !company || !title) {
+    if (!company || !title) {
       return res.status(400).json({
         success: false,
-        message: "userId, company, and title are required",
+        message: "Company and title are required",
       });
     }
 
     const job = await prisma.job.create({
       data: {
-        userId,
+        userId: req.user.userId,
         company,
         title,
         location,
@@ -52,22 +59,20 @@ export const createJob = async (
 };
 
 export const getJobs = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ) => {
   try {
-    const { userId } = req.query;
-
-    if (!userId || typeof userId !== "string") {
-      return res.status(400).json({
+    if (!req.user?.userId) {
+      return res.status(401).json({
         success: false,
-        message: "userId query parameter is required",
+        message: "Unauthorized",
       });
     }
 
     const jobs = await prisma.job.findMany({
       where: {
-        userId,
+        userId: req.user.userId,
       },
       orderBy: {
         createdAt: "desc",
