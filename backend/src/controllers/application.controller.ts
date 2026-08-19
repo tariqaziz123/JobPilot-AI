@@ -1,28 +1,45 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { AuthRequest } from "../middleware/auth.middleware.js";
 
 export const createApplication = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ) => {
   try {
-    const {
-      userId,
-      jobId,
-      status,
-      notes,
-    } = req.body;
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-    if (!userId || !jobId) {
+    const { jobId, status, notes } = req.body;
+
+    if (!jobId) {
       return res.status(400).json({
         success: false,
-        message: "userId and jobId are required",
+        message: "jobId is required",
+      });
+    }
+
+    const job = await prisma.job.findFirst({
+      where: {
+        id: jobId,
+        userId: req.user.userId,
+      },
+    });
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
       });
     }
 
     const application = await prisma.application.create({
       data: {
-        userId,
+        userId: req.user.userId,
         jobId,
         status,
         notes,
@@ -44,22 +61,20 @@ export const createApplication = async (
 };
 
 export const getApplications = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ) => {
   try {
-    const { userId } = req.query;
-
-    if (!userId || typeof userId !== "string") {
-      return res.status(400).json({
+    if (!req.user?.userId) {
+      return res.status(401).json({
         success: false,
-        message: "userId query parameter is required",
+        message: "Unauthorized",
       });
     }
 
     const applications = await prisma.application.findMany({
       where: {
-        userId,
+        userId: req.user.userId,
       },
       include: {
         job: true,
