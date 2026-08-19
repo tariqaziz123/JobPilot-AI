@@ -3,6 +3,8 @@ import cors from "cors";
 
 import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import jobRoutes from "./routes/job.routes.js"
 
 const app = express();
 
@@ -15,5 +17,7 @@ app.use(
 app.use(express.json());
 
 app.use("/api/health", healthRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/jobs", jobRoutes);
 
 export default app;
