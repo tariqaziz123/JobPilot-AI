@@ -92,3 +92,69 @@ export const getJobs = async (
     });
   }
 };
+
+export const updateJobStatus = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const id = req.params.id;
+
+    if (typeof id !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid job ID",
+      });
+    }
+    const { status } = req.body;
+
+    const allowedStatuses = [
+      "SAVED",
+      "APPLIED",
+      "INTERVIEW",
+      "OFFER",
+      "REJECTED",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid job status",
+      });
+    }
+
+    const job = await prisma.job.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    const updatedJob = await prisma.job.update({
+      where: {
+        id,
+      },
+      data: {
+        status,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: updatedJob,
+    });
+  } catch (error) {
+    console.error("Failed to update job status:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update job status",
+    });
+  }
+};

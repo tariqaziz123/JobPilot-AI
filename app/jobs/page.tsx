@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { createJob, getJobs } from "@/lib/api";
+import { createJob, getJobs, updateJobStatus } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Job = {
@@ -111,6 +111,30 @@ export default function JobsPage() {
         </div>
       </DashboardLayout>
     );
+  }
+
+  async function handleStatusChange(
+    jobId: string,
+    status: string
+  ) {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      await updateJobStatus(token, jobId, status);
+
+      await loadJobs();
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to update job status");
+      }
+    }
   }
 
   return (
@@ -318,9 +342,22 @@ export default function JobsPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
-                          {job.status}
-                        </span>
+                        <select
+                          value={job.status}
+                          onChange={(event) =>
+                            handleStatusChange(
+                              job.id,
+                              event.target.value
+                            )
+                          }
+                          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+                        >
+                          <option value="SAVED">Saved</option>
+                          <option value="APPLIED">Applied</option>
+                          <option value="INTERVIEW">Interview</option>
+                          <option value="OFFER">Offer</option>
+                          <option value="REJECTED">Rejected</option>
+                        </select>
                       </td>
 
                       <td className="px-6 py-4 text-slate-400">

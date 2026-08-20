@@ -165,3 +165,33 @@ export async function getHealth() {
 
   return response.json();
 }
+
+export async function updateJobStatus(
+  token: string,
+  jobId: string,
+  status: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/jobs/${jobId}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        status,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message || "Failed to update job status"
+    );
+  }
+
+  return response.json();
+}
