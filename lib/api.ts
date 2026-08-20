@@ -243,3 +243,32 @@ export async function getAnalytics(token: string) {
 
   return response.json();
 }
+
+export async function updateMe(
+  token: string,
+  data: {
+    name: string;
+  }
+) {
+  const response = await fetch(
+    `${API_URL}/api/users/me`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message || "Failed to update profile"
+    );
+  }
+
+  return response.json();
+}
