@@ -128,33 +128,6 @@ export async function getApplications(token: string) {
   return result;
 }
 
-export async function createApplication(
-  token: string,
-  data: {
-    jobId: string;
-    status?: string;
-    notes?: string;
-  }
-) {
-  const response = await fetch(`${API_URL}/api/applications`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      result.message || "Failed to create application"
-    );
-  }
-
-  return result;
-}
 
 export async function getHealth() {
   const response = await fetch(`${API_URL}/api/health`);
@@ -190,6 +163,37 @@ export async function updateJobStatus(
 
     throw new Error(
       result?.message || "Failed to update job status"
+    );
+  }
+
+  return response.json();
+}
+
+export async function createApplication(
+  token: string,
+  data: {
+    jobId: string;
+    status?: string;
+    notes?: string;
+  }
+) {
+  const response = await fetch(
+    `${API_URL}/api/applications`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message || "Failed to create application"
     );
   }
 

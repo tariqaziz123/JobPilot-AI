@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { createJob, getJobs, updateJobStatus } from "@/lib/api";
+import { createJob, getJobs, updateJobStatus, createApplication } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Job = {
@@ -133,6 +133,32 @@ export default function JobsPage() {
         setError(error.message);
       } else {
         setError("Failed to update job status");
+      }
+    }
+  }
+
+  async function handleApply(jobId: string) {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      await createApplication(token, {
+        jobId,
+        status: "APPLIED",
+      });
+
+      await updateJobStatus(token, jobId, "APPLIED");
+
+      await loadJobs();
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to apply for job");
       }
     }
   }
@@ -320,6 +346,10 @@ export default function JobsPage() {
                     <th className="px-6 py-4 font-medium">
                       Source
                     </th>
+
+                    <th className="px-6 py-4 font-medium">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -362,6 +392,21 @@ export default function JobsPage() {
 
                       <td className="px-6 py-4 text-slate-400">
                         {job.source || "—"}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        {job.status === "SAVED" ? (
+                          <button
+                            onClick={() => handleApply(job.id)}
+                            className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-500"
+                          >
+                            Apply
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-500">
+                            Applied
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
