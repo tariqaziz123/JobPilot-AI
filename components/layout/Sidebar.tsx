@@ -13,6 +13,10 @@ const navigation = [
     href: "/jobs",
   },
   {
+    name: "Applications",
+    href: "/applications",
+  },
+  {
     name: "AI Tools",
     href: "/ai",
   },
@@ -51,11 +55,10 @@ export default function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                    active
+                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${active
                       ? "bg-blue-600 text-white"
                       : "text-slate-400 hover:bg-slate-900 hover:text-white"
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>

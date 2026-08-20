@@ -110,25 +110,6 @@ export async function createJob(
   return result;
 }
 
-export async function getApplications(token: string) {
-  const response = await fetch(`${API_URL}/api/applications`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      result.message || "Failed to fetch applications"
-    );
-  }
-
-  return result;
-}
-
-
 export async function getHealth() {
   const response = await fetch(`${API_URL}/api/health`);
 
@@ -194,6 +175,27 @@ export async function createApplication(
 
     throw new Error(
       result?.message || "Failed to create application"
+    );
+  }
+
+  return response.json();
+}
+
+export async function getApplications(token: string) {
+  const response = await fetch(
+    `${API_URL}/api/applications`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message || "Failed to fetch applications"
     );
   }
 
