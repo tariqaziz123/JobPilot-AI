@@ -6,7 +6,10 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import StatCard from "@/components/ui/StatCard";
 import ApiStatus from "@/components/dashboard/ApiStatus";
 
-import { getMe } from "@/lib/api";
+import {
+  getDashboardStats,
+  getMe,
+} from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type User = {
@@ -15,52 +18,42 @@ type User = {
   email: string;
 };
 
-const stats = [
-  {
-    label: "Total Applications",
-    value: 24,
-    description: "All tracked applications",
-  },
-  {
-    label: "Interviews",
-    value: 5,
-    description: "Upcoming and completed",
-  },
-  {
-    label: "Assessments",
-    value: 3,
-    description: "Technical assessments",
-  },
-  {
-    label: "Offers",
-    value: 1,
-    description: "Active offers",
-  },
-];
+type DashboardStats = {
+  totalApplications: number;
+  interviews: number;
+  assessments: number;
+  offers: number;
+};
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadUser() {
-      const token = getToken();
+  async function loadUser() {
+  const token = getToken();
 
-      if (!token) {
-        window.location.href = "/login";
-        return;
-      }
+  if (!token) {
+    window.location.href = "/login";
+    return;
+  }
 
-      try {
-        const result = await getMe(token);
-        setUser(result.data);
-      } catch {
-        localStorage.removeItem("jobpilot_token");
-        window.location.href = "/login";
-      } finally {
-        setLoading(false);
-      }
-    }
+  try {
+    const [userResult, statsResult] = await Promise.all([
+      getMe(token),
+      getDashboardStats(token),
+    ]);
+
+    setUser(userResult.data);
+    setStats(statsResult.data);
+  } catch {
+    localStorage.removeItem("jobpilot_token");
+    window.location.href = "/login";
+  } finally {
+    setLoading(false);
+  }
+}
 
     loadUser();
   }, []);
@@ -97,15 +90,30 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => (
-            <StatCard
-              key={stat.label}
-              label={stat.label}
-              value={stat.value}
-              description={stat.description}
-            />
-          ))}
-        </div>
+  <StatCard
+    label="Total Applications"
+    value={stats?.totalApplications ?? 0}
+    description="All tracked applications"
+  />
+
+  <StatCard
+    label="Interviews"
+    value={stats?.interviews ?? 0}
+    description="Upcoming and completed"
+  />
+
+  <StatCard
+    label="Assessments"
+    value={stats?.assessments ?? 0}
+    description="Technical assessments"
+  />
+
+  <StatCard
+    label="Offers"
+    value={stats?.offers ?? 0}
+    description="Active offers"
+  />
+</div>
 
         <div className="mt-8">
           <ApiStatus />
