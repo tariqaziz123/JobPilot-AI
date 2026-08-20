@@ -201,3 +201,24 @@ export async function getApplications(token: string) {
 
   return response.json();
 }
+
+export async function getDashboardStats(token: string) {
+  const response = await fetch(
+    `${API_URL}/api/dashboard/stats`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message || "Failed to fetch dashboard stats"
+    );
+  }
+
+  return response.json();
+}
