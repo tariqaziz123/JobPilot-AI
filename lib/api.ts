@@ -1,39 +1,19 @@
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-export async function getUsers() {
-  const response = await fetch(`${API_URL}/api/users`);
+type LoginData = {
+  email: string;
+  password: string;
+};
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch users");
-  }
+type SignupData = {
+  name: string;
+  email: string;
+  password: string;
+};
 
-  return response.json();
-}
-
-export async function getJobs(userId: string) {
-  const response = await fetch(
-    `${API_URL}/api/jobs?userId=${encodeURIComponent(userId)}`
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch jobs");
-  }
-
-  return response.json();
-}
-
-export async function createJob(data: {
-  userId: string;
-  company: string;
-  title: string;
-  location?: string;
-  jobUrl?: string;
-  description?: string;
-  salary?: string;
-  source?: string;
-}) {
-  const response = await fetch(`${API_URL}/api/jobs`, {
+export async function signup(data: SignupData) {
+  const response = await fetch(`${API_URL}/api/auth/signup`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -41,11 +21,139 @@ export async function createJob(data: {
     body: JSON.stringify(data),
   });
 
+  const result = await response.json();
+
   if (!response.ok) {
-    throw new Error("Failed to create job");
+    throw new Error(result.message || "Signup failed");
   }
 
-  return response.json();
+  return result;
+}
+
+export async function login(data: LoginData) {
+  const response = await fetch(`${API_URL}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Login failed");
+  }
+
+  return result;
+}
+
+export async function getMe(token: string) {
+  const response = await fetch(`${API_URL}/api/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to fetch user");
+  }
+
+  return result;
+}
+
+export async function getJobs(token: string) {
+  const response = await fetch(`${API_URL}/api/jobs`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to fetch jobs");
+  }
+
+  return result;
+}
+
+export async function createJob(
+  token: string,
+  data: {
+    company: string;
+    title: string;
+    location?: string;
+    jobUrl?: string;
+    description?: string;
+    salary?: string;
+    source?: string;
+  }
+) {
+  const response = await fetch(`${API_URL}/api/jobs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to create job");
+  }
+
+  return result;
+}
+
+export async function getApplications(token: string) {
+  const response = await fetch(`${API_URL}/api/applications`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to fetch applications"
+    );
+  }
+
+  return result;
+}
+
+export async function createApplication(
+  token: string,
+  data: {
+    jobId: string;
+    status?: string;
+    notes?: string;
+  }
+) {
+  const response = await fetch(`${API_URL}/api/applications`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to create application"
+    );
+  }
+
+  return result;
 }
 
 export async function getHealth() {
