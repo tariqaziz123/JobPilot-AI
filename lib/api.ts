@@ -49,7 +49,7 @@ export async function login(data: LoginData) {
 }
 
 export async function getMe(token: string) {
-  const response = await fetch(`${API_URL}/api/auth/me`, {
+  const response = await fetch(`${API_URL}/api/users/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -277,6 +277,8 @@ export async function updateMe(
   token: string,
   data: {
     name: string;
+    skills: string[];
+    resumeText: string;
   }
 ) {
   const response = await fetch(
