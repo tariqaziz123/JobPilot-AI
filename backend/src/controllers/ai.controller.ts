@@ -251,3 +251,43 @@ export const analyzeResumeController = async (
     });
   }
 };
+
+export const getResumeAnalyses = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const analyses = await prisma.resumeAnalysis.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: analyses,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to fetch resume analyses:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch resume analyses",
+    });
+  }
+};
