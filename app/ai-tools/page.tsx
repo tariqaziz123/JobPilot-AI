@@ -28,8 +28,8 @@ type AnalysisHistory = {
     id: string;
     matchScore: number | null;
     atsScore: number | null;
-    skillsMatched: string | null;
-    missingSkills: string | null;
+    skillsMatched: string[];
+    missingSkills: string[];
     recommendation: string | null;
     createdAt: string;
     job: {
@@ -41,7 +41,6 @@ type AnalysisHistory = {
     };
 };
 
-
 export default function AIToolsPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [selectedJobId, setSelectedJobId] = useState("");
@@ -51,7 +50,7 @@ export default function AIToolsPage() {
     const [history, setHistory] = useState<
         AnalysisHistory[]
     >([]);
-
+    const [selectedHistory, setSelectedHistory] = useState<AnalysisHistory | null>(null);
     const [loading, setLoading] = useState(true);
     const [analyzing, setAnalyzing] = useState(false);
     const [error, setError] = useState("");
@@ -384,7 +383,8 @@ export default function AIToolsPage() {
                                     {history.map((item) => (
                                         <tr
                                             key={item.id}
-                                            className="border-b border-slate-800 last:border-b-0"
+                                            onClick={() => setSelectedHistory(item)}
+                                            className="cursor-pointer border-b border-slate-800 transition hover:bg-slate-800/50 last:border-b-0"
                                         >
                                             <td className="px-6 py-4">
                                                 <p className="font-medium text-white">
@@ -422,6 +422,121 @@ export default function AIToolsPage() {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </section>
+            )}
+            {selectedHistory && (
+                <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-blue-400">
+                                Previous Analysis
+                            </p>
+
+                            <h2 className="mt-2 text-2xl font-bold text-white">
+                                {selectedHistory.job.title}
+                            </h2>
+
+                            <p className="mt-1 text-slate-400">
+                                {selectedHistory.job.company}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-500">
+                                Analyzed on{" "}
+                                {new Date(
+                                    selectedHistory.createdAt
+                                ).toLocaleString()}
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setSelectedHistory(null)}
+                            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+                        >
+                            Close
+                        </button>
+                    </div>
+
+                    <div className="mt-6 grid gap-6 sm:grid-cols-2">
+                        <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                            <p className="text-sm text-slate-400">
+                                Match Score
+                            </p>
+
+                            <p className="mt-2 text-4xl font-bold text-white">
+                                {selectedHistory.matchScore ?? 0}%
+                            </p>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                            <p className="text-sm text-slate-400">
+                                ATS Score
+                            </p>
+
+                            <p className="mt-2 text-4xl font-bold text-white">
+                                {selectedHistory.atsScore ?? 0}%
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                        <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                            <h3 className="text-lg font-semibold text-white">
+                                Skills Matched
+                            </h3>
+
+                            {selectedHistory.skillsMatched?.length > 0 ? (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {selectedHistory.skillsMatched.map((skill) => (
+                                        <span
+                                            key={skill}
+                                            className="rounded-full border border-emerald-800 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-400"
+                                        >
+                                            ✓ {skill}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="mt-4 text-sm text-slate-500">
+                                    No matching skills found.
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                            <h3 className="text-lg font-semibold text-white">
+                                Missing Skills
+                            </h3>
+
+                            {selectedHistory.missingSkills?.length > 0 ? (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {selectedHistory.missingSkills.map((skill) => (
+                                        <span
+                                            key={skill}
+                                            className="rounded-full border border-amber-800 bg-amber-950/40 px-3 py-1.5 text-sm text-amber-400"
+                                        >
+                                            {skill}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="mt-4 text-sm text-emerald-400">
+                                    No major missing skills identified.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
+                        <h3 className="text-lg font-semibold text-white">
+                            Recommendation
+                        </h3>
+
+                        <p className="mt-3 leading-7 text-slate-300">
+                            {selectedHistory.recommendation ||
+                                "No recommendation available."}
+                        </p>
                     </div>
                 </section>
             )}
