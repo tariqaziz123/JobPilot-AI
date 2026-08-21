@@ -77,11 +77,13 @@ export const getMe = async (
         id: userId,
       },
       select: {
-        id: true,
-        name: true,
-        email: true,
-        createdAt: true,
-      },
+      id: true,
+      name: true,
+      email: true,
+      skills: true,
+      resumeText: true,
+      createdAt: true,
+    },
     });
 
     if (!user) {
@@ -111,7 +113,12 @@ export const updateMe = async (
 ) => {
   try {
     const userId = req.user?.userId;
-    const { name } = req.body;
+
+    const {
+      name,
+      skills,
+      resumeText,
+    } = req.body;
 
     if (!userId) {
       return res.status(401).json({
@@ -120,17 +127,51 @@ export const updateMe = async (
       });
     }
 
+    if (skills !== undefined && !Array.isArray(skills)) {
+      return res.status(400).json({
+        success: false,
+        message: "skills must be an array",
+      });
+    }
+
+    if (
+      resumeText !== undefined &&
+      typeof resumeText !== "string"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "resumeText must be a string",
+      });
+    }
+
+    const cleanedSkills =
+      skills
+        ?.filter(
+          (skill: unknown): skill is string =>
+            typeof skill === "string"
+        )
+        .map((skill: string) => skill.trim())
+        .filter(Boolean);
+
     const user = await prisma.user.update({
       where: {
         id: userId,
       },
       data: {
-        name,
+        ...(name !== undefined && { name }),
+        ...(skills !== undefined && {
+          skills: cleanedSkills,
+        }),
+        ...(resumeText !== undefined && {
+          resumeText: resumeText.trim() || null,
+        }),
       },
       select: {
         id: true,
         name: true,
         email: true,
+        skills: true,
+        resumeText: true,
         createdAt: true,
       },
     });
@@ -140,7 +181,10 @@ export const updateMe = async (
       data: user,
     });
   } catch (error) {
-    console.error("Failed to update profile:", error);
+    console.error(
+      "Failed to update profile:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -148,3 +192,5 @@ export const updateMe = async (
     });
   }
 };
+
+
