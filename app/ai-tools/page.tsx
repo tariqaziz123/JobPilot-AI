@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { analyzeJob, getJobs, getAIAnalyses } from "@/lib/api";
@@ -55,43 +56,55 @@ export default function AIToolsPage() {
     const [analyzing, setAnalyzing] = useState(false);
     const [error, setError] = useState("");
 
+    const searchParams = useSearchParams();
+    const jobIdFromUrl = searchParams.get("jobId");
+
     useEffect(() => {
-        async function loadData() {
-            const token = getToken();
+  async function loadData() {
+    const token = getToken();
 
-            if (!token) {
-                window.location.href = "/login";
-                return;
-            }
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
 
-            try {
-                const [jobsResult, analysesResult] =
-                    await Promise.all([
-                        getJobs(token),
-                        getAIAnalyses(token),
-                    ]);
+    try {
+      const [jobsResult, analysesResult] =
+        await Promise.all([
+          getJobs(token),
+          getAIAnalyses(token),
+        ]);
 
-                const jobsWithDescription =
-                    jobsResult.data.filter(
-                        (job: Job) =>
-                            job.description?.trim()
-                    );
+      const jobsWithDescription =
+        jobsResult.data.filter(
+          (job: Job) => job.description?.trim()
+        );
 
-                setJobs(jobsWithDescription);
-                setHistory(analysesResult.data);
-            } catch (error) {
-                setError(
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to load AI Tools"
-                );
-            } finally {
-                setLoading(false);
-            }
-        }
+      setJobs(jobsWithDescription);
 
-        loadData();
-    }, []);
+      if (
+        jobIdFromUrl &&
+        jobsWithDescription.some(
+          (job: Job) => job.id === jobIdFromUrl
+        )
+      ) {
+        setSelectedJobId(jobIdFromUrl);
+      }
+
+      setHistory(analysesResult.data);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load AI Tools"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadData();
+}, [jobIdFromUrl]);
 
     async function handleAnalyze() {
         const token = getToken();
