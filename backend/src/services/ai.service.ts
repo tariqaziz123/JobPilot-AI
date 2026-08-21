@@ -2,6 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 
 import { env } from "../config/env.js";
 
+import {JobAnalysisResult, ResumeAnalysisResult} from "../types/ai.js"
+
 const ai = new GoogleGenAI({
   apiKey: env.geminiApiKey,
 });
@@ -11,6 +13,83 @@ const MODELS = [
   "gemini-3.6-flash",
   "gemini-3.5-flash",
 ];
+
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) => typeof item === "string"
+    )
+  );
+}
+
+function isScore(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    value >= 0 &&
+    value <= 100
+  );
+}
+
+function validateJobAnalysis(
+  analysis: JobAnalysisResult
+): JobAnalysisResult {
+  if (
+    !isScore(analysis.matchScore) ||
+    !isScore(analysis.atsScore) ||
+    !isStringArray(analysis.skillsMatched) ||
+    !isStringArray(analysis.missingSkills) ||
+    typeof analysis.recommendation !== "string"
+  ) {
+    throw new Error(
+      "Invalid job analysis structure"
+    );
+  }
+
+  return analysis;
+}
+
+function validateResumeAnalysis(
+  analysis: ResumeAnalysisResult
+): ResumeAnalysisResult {
+  if (
+    !isScore(analysis.resumeScore) ||
+    !isScore(analysis.atsScore) ||
+    !isStringArray(analysis.strengths) ||
+    !isStringArray(analysis.weaknesses) ||
+    !isStringArray(analysis.missingKeywords) ||
+    !isStringArray(analysis.improvements) ||
+    !isStringArray(analysis.recommendedSkills)
+  ) {
+    throw new Error(
+      "Invalid resume analysis structure"
+    );
+  }
+
+  return analysis;
+}
+
+function parseAIJson<T>(response: string): T {
+  try {
+    return JSON.parse(response) as T;
+  } catch {
+    const cleaned = response
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    try {
+      return JSON.parse(cleaned) as T;
+    } catch (error) {
+      console.error("Invalid AI JSON response:", response);
+
+      throw new Error(
+        "AI returned an invalid JSON response"
+      );
+    }
+  }
+}
 
 export async function generateAIResponse(
   prompt: string
@@ -86,7 +165,9 @@ Rules:
   const response = await generateAIResponse(prompt);
 
   try {
-    const parsed = JSON.parse(response) as JobAnalysis;
+    const parsed = validateJobAnalysis(
+  parseAIJson<JobAnalysisResult>(response)
+);
 
     if (
       typeof parsed.matchScore !== "number" ||
@@ -154,7 +235,9 @@ ${resumeText}
   const response = await generateAIResponse(prompt);
 
   try {
-    return JSON.parse(response);
+    return validateResumeAnalysis(
+  parseAIJson<ResumeAnalysisResult>(response)
+);
   } catch (error) {
     console.error(
       "Failed to parse resume AI response:",
