@@ -18,7 +18,7 @@ const navigation = [
   },
   {
     name: "AI Tools",
-    href: "/ai",
+    href: "/ai-tools",
   },
   {
     name: "Analytics",
