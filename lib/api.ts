@@ -303,3 +303,26 @@ export async function updateMe(
 
   return response.json();
 }
+
+export async function getAIAnalyses(
+  token: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/analyses`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to fetch AI analyses"
+    );
+  }
+
+  return result;
+}

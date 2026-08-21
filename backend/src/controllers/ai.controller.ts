@@ -121,3 +121,54 @@ ${user.resumeText ?? "Not provided"}
     });
   }
 };
+
+export const getAIAnalyses = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const analyses = await prisma.aIAnalysis.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        job: {
+          select: {
+            id: true,
+            company: true,
+            title: true,
+            location: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: analyses,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to fetch AI analyses:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch AI analyses",
+    });
+  }
+};
