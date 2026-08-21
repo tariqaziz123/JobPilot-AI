@@ -2,7 +2,7 @@ import { Response } from "express";
 
 import { prisma } from "../config/prisma.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
-import { analyzeJobMatch } from "../services/ai.service.js";
+import { analyzeJobMatch, analyzeResume } from "../services/ai.service.js";
 
 export const analyzeJob = async (
   req: AuthRequest,
@@ -169,6 +169,85 @@ export const getAIAnalyses = async (
     return res.status(500).json({
       success: false,
       message: "Failed to fetch AI analyses",
+    });
+  }
+};
+
+export const analyzeResumeController = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        resumeText: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!user.resumeText?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please add your resume before analyzing it",
+      });
+    }
+
+    const analysis = await analyzeResume(
+      user.resumeText
+    );
+
+    const savedAnalysis =
+      await prisma.resumeAnalysis.create({
+        data: {
+          userId,
+
+          resumeScore: analysis.resumeScore,
+          atsScore: analysis.atsScore,
+
+          strengths: analysis.strengths,
+          weaknesses: analysis.weaknesses,
+          missingKeywords: analysis.missingKeywords,
+          improvements: analysis.improvements,
+          recommendedSkills:
+            analysis.recommendedSkills,
+        },
+      });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...analysis,
+        analysisId: savedAnalysis.id,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Resume analysis failed:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to analyze resume",
     });
   }
 };

@@ -109,3 +109,60 @@ Rules:
     );
   }
 }
+
+export async function analyzeResume(
+  resumeText: string
+) {
+  const prompt = `
+You are an expert ATS resume reviewer and technical recruiter.
+
+Analyze the following candidate resume.
+
+Return ONLY valid JSON.
+Do not include markdown.
+Do not include code fences.
+
+The JSON must have exactly these fields:
+
+{
+  "resumeScore": number,
+  "atsScore": number,
+  "strengths": string[],
+  "weaknesses": string[],
+  "missingKeywords": string[],
+  "improvements": string[],
+  "recommendedSkills": string[]
+}
+
+Rules:
+
+- resumeScore must be between 0 and 100.
+- atsScore must be between 0 and 100.
+- strengths should contain specific strengths found in the resume.
+- weaknesses should contain specific issues that could reduce hiring chances.
+- missingKeywords should contain relevant technical/job-market keywords that appear to be missing.
+- improvements should contain practical changes the candidate should make.
+- recommendedSkills should contain skills that would improve the candidate's marketability.
+- Do not invent experience that is not present in the resume.
+- Keep the recommendations relevant to the candidate's existing technical background.
+
+Candidate Resume:
+
+${resumeText}
+`;
+
+  const response = await generateAIResponse(prompt);
+
+  try {
+    return JSON.parse(response);
+  } catch (error) {
+    console.error(
+      "Failed to parse resume AI response:",
+      response
+    );
+
+    throw new Error(
+      "AI returned an invalid resume analysis"
+    );
+  }
+}
