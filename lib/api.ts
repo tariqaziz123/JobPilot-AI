@@ -326,3 +326,25 @@ export async function getAIAnalyses(
 
   return result;
 }
+
+export async function analyzeResume(token: string) {
+  const response = await fetch(
+    `${API_URL}/api/ai/analyze-resume`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to analyze resume"
+    );
+  }
+
+  return result;
+}

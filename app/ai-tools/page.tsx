@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { analyzeJob, getJobs, getAIAnalyses } from "@/lib/api";
+import { analyzeJob, getJobs, getAIAnalyses, analyzeResume } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Job = {
@@ -42,6 +42,18 @@ type AnalysisHistory = {
     };
 };
 
+type ResumeAnalysis = {
+    analysisId: string;
+    resumeScore: number;
+    atsScore: number;
+    strengths: string[];
+    weaknesses: string[];
+    missingKeywords: string[];
+    improvements: string[];
+    recommendedSkills: string[];
+};
+
+
 export default function AIToolsPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [selectedJobId, setSelectedJobId] = useState("");
@@ -54,57 +66,59 @@ export default function AIToolsPage() {
     const [selectedHistory, setSelectedHistory] = useState<AnalysisHistory | null>(null);
     const [loading, setLoading] = useState(true);
     const [analyzing, setAnalyzing] = useState(false);
+    const [resumeAnalysis, setResumeAnalysis] = useState<ResumeAnalysis | null>(null);
+    const [resumeAnalyzing, setResumeAnalyzing] = useState(false);
     const [error, setError] = useState("");
 
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
 
     useEffect(() => {
-  async function loadData() {
-    const token = getToken();
+        async function loadData() {
+            const token = getToken();
 
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
+            if (!token) {
+                window.location.href = "/login";
+                return;
+            }
 
-    try {
-      const [jobsResult, analysesResult] =
-        await Promise.all([
-          getJobs(token),
-          getAIAnalyses(token),
-        ]);
+            try {
+                const [jobsResult, analysesResult] =
+                    await Promise.all([
+                        getJobs(token),
+                        getAIAnalyses(token),
+                    ]);
 
-      const jobsWithDescription =
-        jobsResult.data.filter(
-          (job: Job) => job.description?.trim()
-        );
+                const jobsWithDescription =
+                    jobsResult.data.filter(
+                        (job: Job) => job.description?.trim()
+                    );
 
-      setJobs(jobsWithDescription);
+                setJobs(jobsWithDescription);
 
-      if (
-        jobIdFromUrl &&
-        jobsWithDescription.some(
-          (job: Job) => job.id === jobIdFromUrl
-        )
-      ) {
-        setSelectedJobId(jobIdFromUrl);
-      }
+                if (
+                    jobIdFromUrl &&
+                    jobsWithDescription.some(
+                        (job: Job) => job.id === jobIdFromUrl
+                    )
+                ) {
+                    setSelectedJobId(jobIdFromUrl);
+                }
 
-      setHistory(analysesResult.data);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load AI Tools"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+                setHistory(analysesResult.data);
+            } catch (error) {
+                setError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load AI Tools"
+                );
+            } finally {
+                setLoading(false);
+            }
+        }
 
-  loadData();
-}, [jobIdFromUrl]);
+        loadData();
+    }, [jobIdFromUrl]);
 
     async function handleAnalyze() {
         const token = getToken();
@@ -156,6 +170,32 @@ export default function AIToolsPage() {
         );
     }
 
+    async function handleResumeAnalysis() {
+        const token = getToken();
+
+        if (!token) {
+            window.location.href = "/login";
+            return;
+        }
+
+        setResumeAnalyzing(true);
+        setError("");
+
+        try {
+            const result = await analyzeResume(token);
+
+            setResumeAnalysis(result.data);
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to analyze resume"
+            );
+        } finally {
+            setResumeAnalyzing(false);
+        }
+    }
+
     return (
         <DashboardLayout>
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -163,7 +203,165 @@ export default function AIToolsPage() {
                     <p className="text-sm font-medium text-blue-400">
                         AI Tools
                     </p>
+                    <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                        <div>
+                            <p className="text-sm font-medium text-purple-400">
+                                AI Resume Tool
+                            </p>
 
+                            <h2 className="mt-2 text-2xl font-bold text-white">
+                                Resume Analyzer
+                            </h2>
+
+                            <p className="mt-2 text-sm text-slate-400">
+                                Analyze your saved resume for ATS compatibility,
+                                strengths, weaknesses, and improvement opportunities.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleResumeAnalysis}
+                            disabled={resumeAnalyzing}
+                            className="mt-6 rounded-lg bg-purple-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {resumeAnalyzing
+                                ? "Analyzing Resume..."
+                                : "Analyze Resume"}
+                        </button>
+                    </section>
+                    {resumeAnalysis && (
+                        <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                            <div>
+                                <p className="text-sm font-medium text-purple-400">
+                                    Resume Analysis
+                                </p>
+
+                                <h2 className="mt-2 text-2xl font-bold text-white">
+                                    Your Resume Results
+                                </h2>
+                            </div>
+
+                            <div className="mt-6 grid gap-6 sm:grid-cols-2">
+                                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                    <p className="text-sm text-slate-400">
+                                        Resume Score
+                                    </p>
+
+                                    <p className="mt-2 text-4xl font-bold text-white">
+                                        {resumeAnalysis.resumeScore}%
+                                    </p>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                    <p className="text-sm text-slate-400">
+                                        ATS Score
+                                    </p>
+
+                                    <p className="mt-2 text-4xl font-bold text-white">
+                                        {resumeAnalysis.atsScore}%
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                    <h3 className="text-lg font-semibold">
+                                        Strengths
+                                    </h3>
+
+                                    <ul className="mt-4 space-y-2">
+                                        {resumeAnalysis.strengths.map(
+                                            (item) => (
+                                                <li
+                                                    key={item}
+                                                    className="text-sm text-slate-300"
+                                                >
+                                                    ✓ {item}
+                                                </li>
+                                            )
+                                        )}
+                                    </ul>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                    <h3 className="text-lg font-semibold">
+                                        Weaknesses
+                                    </h3>
+
+                                    <ul className="mt-4 space-y-2">
+                                        {resumeAnalysis.weaknesses.map(
+                                            (item) => (
+                                                <li
+                                                    key={item}
+                                                    className="text-sm text-slate-300"
+                                                >
+                                                    • {item}
+                                                </li>
+                                            )
+                                        )}
+                                    </ul>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                    <h3 className="text-lg font-semibold">
+                                        Missing Keywords
+                                    </h3>
+
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {resumeAnalysis.missingKeywords.map(
+                                            (item) => (
+                                                <span
+                                                    key={item}
+                                                    className="rounded-full border border-amber-800 bg-amber-950/40 px-3 py-1.5 text-sm text-amber-400"
+                                                >
+                                                    {item}
+                                                </span>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                    <h3 className="text-lg font-semibold">
+                                        Recommended Skills
+                                    </h3>
+
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {resumeAnalysis.recommendedSkills.map(
+                                            (item) => (
+                                                <span
+                                                    key={item}
+                                                    className="rounded-full border border-blue-800 bg-blue-950/40 px-3 py-1.5 text-sm text-blue-400"
+                                                >
+                                                    {item}
+                                                </span>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                <h3 className="text-lg font-semibold">
+                                    Improvements
+                                </h3>
+
+                                <ul className="mt-4 space-y-3">
+                                    {resumeAnalysis.improvements.map(
+                                        (item) => (
+                                            <li
+                                                key={item}
+                                                className="text-sm leading-6 text-slate-300"
+                                            >
+                                                → {item}
+                                            </li>
+                                        )
+                                    )}
+                                </ul>
+                            </div>
+                        </section>
+                    )}
                     <h1 className="mt-2 text-3xl font-bold">
                         Job Analyzer
                     </h1>
