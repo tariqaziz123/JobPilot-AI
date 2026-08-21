@@ -11,6 +11,10 @@ const router = Router();
 
 router.get("/", authMiddleware, getJobs);
 router.post("/", authMiddleware, createJob);
-router.patch("/:id/status", updateJobStatus);
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  updateJobStatus
+);
 
 export default router;

@@ -6,13 +6,15 @@ export type JobStatus =
   | "OFFER"
   | "REJECTED";
 
-export type Job = {
+type Job = {
   id: string;
   company: string;
-  position: string;
-  location?: string;
-  jobUrl?: string;
-  status: JobStatus;
-  appliedAt?: string;
+  title: string;
+  location: string | null;
+  jobUrl: string | null;
+  description: string | null;
+  salary: string | null;
+  source: string | null;
+  status: string;
   createdAt: string;
 };

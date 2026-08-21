@@ -80,6 +80,35 @@ export async function getJobs(token: string) {
   return result;
 }
 
+export async function analyzeJob(
+  token: string,
+  jobId: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/analyze-job`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        jobId,
+      }),
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to analyze job"
+    );
+  }
+
+  return result;
+}
+
 export async function createJob(
   token: string,
   data: {

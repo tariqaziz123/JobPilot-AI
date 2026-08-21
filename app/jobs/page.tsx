@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { createJob, getJobs, updateJobStatus, createApplication } from "@/lib/api";
+import { createJob, getJobs, updateJobStatus, createApplication, analyzeJob } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Job = {
@@ -16,6 +16,16 @@ type Job = {
   source: string | null;
   status: string;
   createdAt: string;
+};
+
+type JobAnalysis = {
+  matchScore: number;
+  atsScore: number;
+  skillsMatched: string[];
+  missingSkills: string[];
+  recommendation: string;
+  analysisId: string;
+  jobId: string;
 };
 
 export default function JobsPage() {
@@ -32,6 +42,9 @@ export default function JobsPage() {
   const [jobUrl, setJobUrl] = useState("");
   const [salary, setSalary] = useState("");
   const [source, setSource] = useState("");
+  const [description, setDescription] = useState("");
+  const [analyzingJobId, setAnalyzingJobId] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<JobAnalysis | null>(null);
 
   async function loadJobs() {
     const token = getToken();
@@ -78,6 +91,7 @@ export default function JobsPage() {
         title,
         location: location || undefined,
         jobUrl: jobUrl || undefined,
+        description,
         salary: salary || undefined,
         source: source || undefined,
       });
@@ -86,6 +100,7 @@ export default function JobsPage() {
       setTitle("");
       setLocation("");
       setJobUrl("");
+      setDescription("");
       setSalary("");
       setSource("");
 
@@ -163,6 +178,32 @@ export default function JobsPage() {
     }
   }
 
+  async function handleAnalyzeJob(jobId: string) {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setAnalyzingJobId(jobId);
+    setError("");
+
+    try {
+      const result = await analyzeJob(token, jobId);
+
+      setAnalysis(result.data);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to analyze job");
+      }
+    } finally {
+      setAnalyzingJobId(null);
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -192,6 +233,103 @@ export default function JobsPage() {
         {error && (
           <div className="mt-6 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-400">
             {error}
+          </div>
+        )}
+
+        {analysis && (
+          <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-400">
+                  AI Job Analysis
+                </p>
+
+                <h2 className="mt-1 text-xl font-semibold text-white">
+                  Job Match Results
+                </h2>
+              </div>
+
+              <button
+                onClick={() => setAnalysis(null)}
+                className="text-sm text-slate-400 transition hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-slate-800 bg-slate-950 p-5">
+                <p className="text-sm text-slate-400">
+                  Match Score
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-green-400">
+                  {analysis.matchScore}%
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-slate-800 bg-slate-950 p-5">
+                <p className="text-sm text-slate-400">
+                  ATS Score
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-blue-400">
+                  {analysis.atsScore}%
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <div>
+                <h3 className="font-semibold text-white">
+                  Skills Matched
+                </h3>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {analysis.skillsMatched.map((skill) => (
+                    <span
+                      key={skill}
+                      className="rounded-full bg-green-500/10 px-3 py-1 text-sm text-green-300"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-white">
+                  Missing Skills
+                </h3>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {analysis.missingSkills.length > 0 ? (
+                    analysis.missingSkills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="rounded-full bg-red-500/10 px-3 py-1 text-sm text-red-300"
+                      >
+                        {skill}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-green-400">
+                      No major missing skills 🎉
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-5">
+              <h3 className="font-semibold text-white">
+                Recommendation
+              </h3>
+
+              <p className="mt-2 leading-7 text-slate-300">
+                {analysis.recommendation}
+              </p>
+            </div>
           </div>
         )}
 
@@ -236,7 +374,22 @@ export default function JobsPage() {
                   className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
                 />
               </div>
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm text-slate-300">
+                  Job Description *
+                </label>
 
+                <textarea
+                  required
+                  value={description}
+                  onChange={(event) =>
+                    setDescription(event.target.value)
+                  }
+                  placeholder="Paste the complete job description here..."
+                  rows={8}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+                />
+              </div>
               <div>
                 <label className="mb-2 block text-sm text-slate-300">
                   Location
@@ -395,18 +548,30 @@ export default function JobsPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        {job.status === "SAVED" ? (
+                        <div className="flex flex-wrap gap-2">
+                          {job.status === "SAVED" ? (
+                            <button
+                              onClick={() => handleApply(job.id)}
+                              className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-500"
+                            >
+                              Apply
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-500">
+                              Applied
+                            </span>
+                          )}
+
                           <button
-                            onClick={() => handleApply(job.id)}
-                            className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-500"
+                            onClick={() => handleAnalyzeJob(job.id)}
+                            disabled={analyzingJobId === job.id}
+                            className="rounded-lg border border-purple-500/50 bg-purple-500/10 px-3 py-2 text-xs font-medium text-purple-300 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Apply
+                            {analyzingJobId === job.id
+                              ? "Analyzing..."
+                              : "Analyze AI"}
                           </button>
-                        ) : (
-                          <span className="text-xs text-slate-500">
-                            Applied
-                          </span>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   ))}
