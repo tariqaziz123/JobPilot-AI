@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 import { env } from "../config/env.js";
 
-import {JobAnalysisResult, ResumeAnalysisResult, JobRecommendation} from "../types/ai.js"
+import { JobAnalysisResult, ResumeAnalysisResult, JobRecommendation } from "../types/ai.js"
 
 const ai = new GoogleGenAI({
   apiKey: env.geminiApiKey,
@@ -166,8 +166,8 @@ Rules:
 
   try {
     const parsed = validateJobAnalysis(
-  parseAIJson<JobAnalysisResult>(response)
-);
+      parseAIJson<JobAnalysisResult>(response)
+    );
 
     if (
       typeof parsed.matchScore !== "number" ||
@@ -184,8 +184,7 @@ Rules:
     console.error("Failed to parse Gemini job analysis:", response);
 
     throw new Error(
-      `Gemini returned invalid structured JSON: ${
-        error instanceof Error ? error.message : "Unknown error"
+      `Gemini returned invalid structured JSON: ${error instanceof Error ? error.message : "Unknown error"
       }`
     );
   }
@@ -236,8 +235,8 @@ ${resumeText}
 
   try {
     return validateResumeAnalysis(
-  parseAIJson<ResumeAnalysisResult>(response)
-);
+      parseAIJson<ResumeAnalysisResult>(response)
+    );
   } catch (error) {
     console.error(
       "Failed to parse resume AI response:",
@@ -248,6 +247,32 @@ ${resumeText}
       "AI returned an invalid resume analysis"
     );
   }
+}
+
+function validateJobRecommendations(
+  recommendations: JobRecommendation[]
+): JobRecommendation[] {
+  if (!Array.isArray(recommendations)) {
+    throw new Error(
+      "AI returned an invalid recommendation list"
+    );
+  }
+
+  for (const recommendation of recommendations) {
+    if (
+      typeof recommendation.jobId !== "string" ||
+      !isScore(recommendation.matchScore) ||
+      typeof recommendation.reason !== "string" ||
+      !isStringArray(recommendation.strengths) ||
+      !isStringArray(recommendation.missingSkills)
+    ) {
+      throw new Error(
+        "AI returned an invalid job recommendation"
+      );
+    }
+  }
+
+  return recommendations;
 }
 
 export async function recommendJobs(
@@ -310,11 +335,7 @@ Rules:
   const recommendations =
     parseAIJson<JobRecommendation[]>(response);
 
-  if (!Array.isArray(recommendations)) {
-    throw new Error(
-      "Invalid job recommendation structure"
-    );
-  }
-
-  return recommendations;
+  return validateJobRecommendations(
+    recommendations
+  );
 }

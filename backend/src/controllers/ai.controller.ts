@@ -331,6 +331,7 @@ export const getJobRecommendations = async (
         orderBy: {
           createdAt: "desc",
         },
+        take: 15,
       }),
     ]);
 
