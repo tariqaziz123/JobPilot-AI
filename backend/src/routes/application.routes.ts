@@ -3,7 +3,8 @@ import { Router } from "express";
 import {
   createApplication,
   getApplications,
-  updateApplicationStatus
+  updateApplicationStatus,
+  getApplicationById
 } from "../controllers/application.controller.js";
 
 import { authMiddleware } from "../middleware/auth.middleware.js";
@@ -16,6 +17,11 @@ router.patch(
   "/:applicationId/status",
   authMiddleware,
   updateApplicationStatus
+);
+router.get(
+  "/:applicationId",
+  authMiddleware,
+  getApplicationById
 );
 
 export default router;

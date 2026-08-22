@@ -193,3 +193,65 @@ export const updateApplicationStatus = async (
     });
   }
 };
+
+export const getApplicationById = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const applicationId = req.params.applicationId;
+
+    if (Array.isArray(applicationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid applicationId",
+      });
+    }
+
+    if (!applicationId) {
+      return res.status(400).json({
+        success: false,
+        message: "applicationId is required",
+      });
+    }
+
+    const application = await prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId: req.user.userId,
+      },
+      include: {
+        job: true,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: application,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to fetch application:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch application",
+    });
+  }
+};

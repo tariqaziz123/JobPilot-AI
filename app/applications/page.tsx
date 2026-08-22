@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { getApplications, updateApplicationStatus } from "@/lib/api";
+import { getApplications, updateApplicationStatus, getApplicationById } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Application = {
@@ -37,6 +37,11 @@ export default function ApplicationsPage() {
   const [selectedStatus, setSelectedStatus] = useState<
     ApplicationStatus | "All"
   >("All");
+  const [selectedApplication, setSelectedApplication] =
+    useState<Application | null>(null);
+
+  const [detailsLoading, setDetailsLoading] =
+    useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -101,6 +106,37 @@ export default function ApplicationsPage() {
     }
   }
 
+  async function handleViewDetails(
+    applicationId: string
+  ) {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setDetailsLoading(true);
+    setError("");
+
+    try {
+      const result = await getApplicationById(
+        token,
+        applicationId
+      );
+
+      setSelectedApplication(result.data);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load application"
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
+  }
+
   const filteredApplications = applications.filter(
     (application) =>
       selectedStatus === "All" ||
@@ -150,11 +186,10 @@ export default function ApplicationsPage() {
                 key={status}
                 type="button"
                 onClick={() => setSelectedStatus(status)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  selectedStatus === status
-                    ? "bg-blue-600 text-white"
-                    : "border border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:text-white"
-                }`}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${selectedStatus === status
+                  ? "bg-blue-600 text-white"
+                  : "border border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:text-white"
+                  }`}
               >
                 {status}
               </button>
@@ -207,6 +242,9 @@ export default function ApplicationsPage() {
                     <th className="px-6 py-4 font-medium">
                       Applied
                     </th>
+                    <th className="px-6 py-4 font-medium">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -252,6 +290,18 @@ export default function ApplicationsPage() {
                           application.appliedAt
                         ).toLocaleDateString()}
                       </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleViewDetails(application.id)
+                          }
+                          disabled={detailsLoading}
+                          className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-blue-500 hover:text-white"
+                        >
+                          {detailsLoading ? "Loading..." : "View Details"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -259,6 +309,102 @@ export default function ApplicationsPage() {
             </div>
           </div>
         )}
+
+       {selectedApplication && (
+  <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="text-sm font-medium text-blue-400">
+          Application Details
+        </p>
+
+        <h2 className="mt-2 text-2xl font-bold text-white">
+          {selectedApplication.job.title}
+        </h2>
+
+        <p className="mt-1 text-slate-400">
+          {selectedApplication.job.company}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          setSelectedApplication(null)
+        }
+        className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+      >
+        Close
+      </button>
+    </div>
+
+    <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="rounded-lg bg-slate-950 p-5">
+        <p className="text-xs uppercase tracking-wide text-slate-500">
+          Status
+        </p>
+
+        <p className="mt-2 font-semibold text-blue-400">
+          {selectedApplication.status}
+        </p>
+      </div>
+
+      <div className="rounded-lg bg-slate-950 p-5">
+        <p className="text-xs uppercase tracking-wide text-slate-500">
+          Applied
+        </p>
+
+        <p className="mt-2 text-sm text-slate-300">
+          {new Date(
+            selectedApplication.appliedAt
+          ).toLocaleDateString()}
+        </p>
+      </div>
+
+      <div className="rounded-lg bg-slate-950 p-5">
+        <p className="text-xs uppercase tracking-wide text-slate-500">
+          Location
+        </p>
+
+        <p className="mt-2 text-sm text-slate-300">
+          {selectedApplication.job.location || "—"}
+        </p>
+      </div>
+
+      <div className="rounded-lg bg-slate-950 p-5">
+        <p className="text-xs uppercase tracking-wide text-slate-500">
+          Job
+        </p>
+
+        {selectedApplication.job.jobUrl ? (
+          <a
+            href={selectedApplication.job.jobUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-block text-sm text-blue-400 hover:text-blue-300"
+          >
+            Open Job ↗
+          </a>
+        ) : (
+          <p className="mt-2 text-sm text-slate-500">
+            No URL
+          </p>
+        )}
+      </div>
+    </div>
+
+    <div className="mt-6 rounded-lg bg-slate-950 p-5">
+      <h3 className="font-semibold text-white">
+        Notes
+      </h3>
+
+      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+        {selectedApplication.notes ||
+          "No notes added."}
+      </p>
+    </div>
+  </section>
+)}
       </div>
     </DashboardLayout>
   );

@@ -427,3 +427,28 @@ export async function updateApplicationStatus(
 
   return response.json();
 }
+
+export async function getApplicationById(
+  token: string,
+  applicationId: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/applications/${applicationId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message ||
+        "Failed to fetch application"
+    );
+  }
+
+  return response.json();
+}
