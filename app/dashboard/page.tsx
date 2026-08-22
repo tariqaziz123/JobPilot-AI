@@ -8,7 +8,8 @@ import ApiStatus from "@/components/dashboard/ApiStatus";
 
 import {
   getDashboardStats,
-  getMe, getJobRecommendations
+  getMe,
+  getJobRecommendations
 } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
@@ -44,7 +45,9 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState<JobRecommendation[]>([]);
-  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+
+  const [recommendationsError, setRecommendationsError] = useState("");
 
   useEffect(() => {
     async function loadUser() {
@@ -61,13 +64,6 @@ export default function DashboardPage() {
           getDashboardStats(token),
         ]);
 
-        const recommendationResult =
-          await getJobRecommendations(token);
-
-        setRecommendations(
-          recommendationResult.data
-        );
-
         setUser(userResult.data);
         setStats(statsResult.data);
       } catch {
@@ -75,12 +71,37 @@ export default function DashboardPage() {
         window.location.href = "/login";
       } finally {
         setLoading(false);
-        setRecommendationsLoading(false);
       }
     }
 
     loadUser();
   }, []);
+
+  async function loadRecommendations() {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setRecommendationsLoading(true);
+    setRecommendationsError("");
+
+    try {
+      const result = await getJobRecommendations(token);
+
+      setRecommendations(result.data);
+    } catch (error) {
+      setRecommendationsError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load recommendations"
+      );
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -139,7 +160,7 @@ export default function DashboardPage() {
           />
         </div>
         <section className="mt-8">
-          <div className="flex items-end justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium text-purple-400">
                 AI Powered
@@ -150,28 +171,62 @@ export default function DashboardPage() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-400">
-                Jobs from your saved list that best match your
-                skills and resume.
+                Find the saved jobs that best match your profile.
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={loadRecommendations}
+              disabled={recommendationsLoading}
+              className="rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {recommendationsLoading
+                ? "Analyzing..."
+                : recommendations.length > 0
+                  ? "Refresh Recommendations"
+                  : "Get AI Recommendations"}
+            </button>
           </div>
+          {recommendationsError && (
+            <div className="mt-5 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-400">
+              {recommendationsError}
+            </div>
+          )}
 
           {recommendationsLoading ? (
-            <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400">
-                Finding your best matches...
+            <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900 p-8 text-center">
+              <p className="font-medium text-white">
+                AI is analyzing your jobs...
+              </p>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Comparing your skills and resume with your saved jobs.
               </p>
             </div>
           ) : recommendations.length === 0 ? (
-            <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900 p-6">
-              <p className="text-sm text-slate-300">
-                No job recommendations yet.
+            <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900 p-8 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-purple-950/50 text-purple-400">
+                ✦
+              </div>
+
+              <h3 className="mt-4 font-semibold text-white">
+                Discover your best matches
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-400">
+                Let AI compare your skills and resume against
+                your saved jobs and identify the opportunities
+                you should prioritize.
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Add some saved jobs to get AI-powered
-                recommendations.
-              </p>
+              <button
+                type="button"
+                onClick={loadRecommendations}
+                className="mt-5 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-purple-500"
+              >
+                Analyze My Jobs
+              </button>
             </div>
           ) : (
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
