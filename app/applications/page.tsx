@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { getApplications } from "@/lib/api";
+import { getApplications, updateApplicationStatus } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Application = {
@@ -21,8 +21,22 @@ type Application = {
   };
 };
 
+const applicationStatuses = [
+  "Applied",
+  "Screening",
+  "Interview",
+  "Assessment",
+  "Offer",
+  "Rejected",
+] as const;
+
+type ApplicationStatus = (typeof applicationStatuses)[number];
+
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<
+    ApplicationStatus | "All"
+  >("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -52,6 +66,46 @@ export default function ApplicationsPage() {
 
     loadApplications();
   }, []);
+
+  async function handleStatusChange(
+    applicationId: string,
+    status: string
+  ) {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const result = await updateApplicationStatus(
+        token,
+        applicationId,
+        status
+      );
+
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId
+            ? result.data
+            : application
+        )
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update application status"
+      );
+    }
+  }
+
+  const filteredApplications = applications.filter(
+    (application) =>
+      selectedStatus === "All" ||
+      application.status === selectedStatus
+  );
 
   if (loading) {
     return (
@@ -86,6 +140,28 @@ export default function ApplicationsPage() {
           </div>
         )}
 
+        <div
+          className="mt-8 flex flex-wrap gap-2"
+          aria-label="Filter applications by status"
+        >
+          {(["All", ...applicationStatuses] as const).map(
+            (status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setSelectedStatus(status)}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  selectedStatus === status
+                    ? "bg-blue-600 text-white"
+                    : "border border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:text-white"
+                }`}
+              >
+                {status}
+              </button>
+            )
+          )}
+        </div>
+
         {applications.length === 0 ? (
           <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
             <h2 className="text-xl font-semibold">
@@ -94,6 +170,16 @@ export default function ApplicationsPage() {
 
             <p className="mt-2 text-slate-400">
               Apply to a job from the Jobs page and it will appear here.
+            </p>
+          </div>
+        ) : filteredApplications.length === 0 ? (
+          <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
+            <h2 className="text-xl font-semibold">
+              No {selectedStatus.toLowerCase()} applications
+            </h2>
+
+            <p className="mt-2 text-slate-400">
+              Try another status to see more applications.
             </p>
           </div>
         ) : (
@@ -125,7 +211,7 @@ export default function ApplicationsPage() {
                 </thead>
 
                 <tbody>
-                  {applications.map((application) => (
+                  {filteredApplications.map((application) => (
                     <tr
                       key={application.id}
                       className="border-b border-slate-800 last:border-b-0"
@@ -143,9 +229,22 @@ export default function ApplicationsPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
-                          {application.status}
-                        </span>
+                        <select
+                          value={application.status}
+                          onChange={(event) =>
+                            handleStatusChange(
+                              application.id,
+                              event.target.value
+                            )
+                          }
+                          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-medium text-blue-400 outline-none focus:border-blue-500"
+                        >
+                          {applicationStatuses.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
                       </td>
 
                       <td className="px-6 py-4 text-sm text-slate-400">

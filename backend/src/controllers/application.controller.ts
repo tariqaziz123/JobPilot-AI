@@ -97,3 +97,99 @@ export const getApplications = async (
     });
   }
 };
+
+export const updateApplicationStatus = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const applicationId = req.params.applicationId;
+
+    if (Array.isArray(applicationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid applicationId",
+      });
+    }
+    const { status } = req.body;
+
+    if (!applicationId) {
+      return res.status(400).json({
+        success: false,
+        message: "applicationId is required",
+      });
+    }
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "status is required",
+      });
+    }
+
+    const allowedStatuses = [
+      "Applied",
+      "Screening",
+      "Interview",
+      "Assessment",
+      "Offer",
+      "Rejected",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application status",
+      });
+    }
+
+    const application = await prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId: req.user.userId,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    const updatedApplication =
+      await prisma.application.update({
+        where: {
+          id: applicationId,
+        },
+        data: {
+          status,
+        },
+        include: {
+          job: true,
+        },
+      });
+
+    return res.status(200).json({
+      success: true,
+      data: updatedApplication,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to update application status:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update application status",
+    });
+  }
+};

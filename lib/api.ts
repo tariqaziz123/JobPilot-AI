@@ -396,3 +396,34 @@ export async function getJobRecommendations(
 
   return result;
 }
+
+export async function updateApplicationStatus(
+  token: string,
+  applicationId: string,
+  status: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/applications/${applicationId}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        status,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message ||
+        "Failed to update application status"
+    );
+  }
+
+  return response.json();
+}
