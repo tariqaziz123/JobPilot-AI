@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { analyzeJob, getAIAnalyses, analyzeResumeController, getResumeAnalyses } from "../controllers/ai.controller.js";
+import { analyzeJob, getAIAnalyses, analyzeResumeController, getResumeAnalyses, getJobRecommendations } from "../controllers/ai.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -27,6 +27,12 @@ router.get(
   "/resume-analyses",
   authMiddleware,
   getResumeAnalyses
+);
+
+router.get(
+  "/job-recommendations",
+  authMiddleware,
+  getJobRecommendations
 );
 
 export default router;

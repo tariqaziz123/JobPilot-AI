@@ -772,8 +772,7 @@ setResumeHistory(resumeResult.data);
                         </div>
                     </section>
                 )}
-            </div>
-            {history.length > 0 && (
+                 {history.length > 0 && (
                 <section className="mt-10">
                     <div>
                         <h2 className="text-2xl font-bold">
@@ -973,6 +972,8 @@ setResumeHistory(resumeResult.data);
                     </div>
                 </section>
             )}
+            </div>
+           
         </DashboardLayout>
     );
 }

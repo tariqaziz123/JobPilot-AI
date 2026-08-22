@@ -372,3 +372,27 @@ export async function getResumeAnalyses(
 
   return result;
 }
+
+export async function getJobRecommendations(
+  token: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/job-recommendations`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message ||
+        "Failed to fetch job recommendations"
+    );
+  }
+
+  return result;
+}

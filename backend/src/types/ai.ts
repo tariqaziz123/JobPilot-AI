@@ -15,3 +15,11 @@ export type ResumeAnalysisResult = {
   improvements: string[];
   recommendedSkills: string[];
 };
+
+export type JobRecommendation = {
+  jobId: string;
+  matchScore: number;
+  reason: string;
+  strengths: string[];
+  missingSkills: string[];
+};

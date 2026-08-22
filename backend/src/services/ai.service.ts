@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 import { env } from "../config/env.js";
 
-import {JobAnalysisResult, ResumeAnalysisResult} from "../types/ai.js"
+import {JobAnalysisResult, ResumeAnalysisResult, JobRecommendation} from "../types/ai.js"
 
 const ai = new GoogleGenAI({
   apiKey: env.geminiApiKey,
@@ -248,4 +248,73 @@ ${resumeText}
       "AI returned an invalid resume analysis"
     );
   }
+}
+
+export async function recommendJobs(
+  candidateProfile: string,
+  jobs: {
+    id: string;
+    title: string;
+    company: string;
+    description: string | null;
+  }[]
+): Promise<JobRecommendation[]> {
+  const jobsText = jobs
+    .map(
+      (job) => `
+Job ID: ${job.id}
+Company: ${job.company}
+Title: ${job.title}
+Description:
+${job.description ?? "No description provided"}
+`
+    )
+    .join("\n---\n");
+
+  const prompt = `
+You are an expert technical recruiter.
+
+Evaluate how well the candidate matches each job.
+
+Candidate Profile:
+${candidateProfile}
+
+Jobs:
+${jobsText}
+
+Return ONLY valid JSON.
+
+Return exactly this structure:
+
+[
+  {
+    "jobId": "string",
+    "matchScore": number,
+    "reason": "string",
+    "strengths": ["string"],
+    "missingSkills": ["string"]
+  }
+]
+
+Rules:
+- matchScore must be between 0 and 100.
+- Include every job.
+- Use the exact Job ID provided.
+- Do not invent candidate experience.
+- Base the recommendation only on the candidate profile and job description.
+- Keep reason concise and useful.
+`;
+
+  const response = await generateAIResponse(prompt);
+
+  const recommendations =
+    parseAIJson<JobRecommendation[]>(response);
+
+  if (!Array.isArray(recommendations)) {
+    throw new Error(
+      "Invalid job recommendation structure"
+    );
+  }
+
+  return recommendations;
 }
