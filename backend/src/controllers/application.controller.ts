@@ -2,6 +2,16 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 
+const APPLICATION_STATUSES = [
+  "APPLIED",
+  "SCREENING",
+  "INTERVIEW",
+  "ASSESSMENT",
+  "OFFER",
+  "REJECTED",
+  "WITHDRAWN",
+] as const;
+
 export const createApplication = async (
   req: AuthRequest,
   res: Response
@@ -15,6 +25,16 @@ export const createApplication = async (
     }
 
     const { jobId, status, notes } = req.body;
+
+    if (
+      status !== undefined &&
+      !APPLICATION_STATUSES.includes(status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application status",
+      });
+    }
 
     if (!jobId) {
       return res.status(400).json({
@@ -272,6 +292,16 @@ export const updateApplication = async (
     }
 
     const { status, notes } = req.body;
+
+    if (
+      status !== undefined &&
+      !APPLICATION_STATUSES.includes(status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application status",
+      });
+    }
 
     const application = await prisma.application.findFirst({
       where: {

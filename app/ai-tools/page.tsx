@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -68,7 +68,7 @@ type JobRecommendation = {
     };
 };
 
-export default function AIToolsPage() {
+function AIToolsContent() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [selectedJobId, setSelectedJobId] = useState("");
 
@@ -1179,4 +1179,22 @@ export default function AIToolsPage() {
 
         </DashboardLayout>
     );
+}
+
+function AIToolsLoading() {
+  return (
+    <DashboardLayout>
+      <div className="p-8 text-slate-400">
+        Loading AI Tools...
+      </div>
+    </DashboardLayout>
+  );
+}
+
+export default function AIToolsPage() {
+  return (
+    <Suspense fallback={<AIToolsLoading />}>
+      <AIToolsContent />
+    </Suspense>
+  );
 }

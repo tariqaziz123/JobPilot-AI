@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { getApplications, updateApplicationStatus, getApplicationById } from "@/lib/api";
+import { getApplications, updateApplicationStatus, getApplicationById, deleteApplication } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Application = {
@@ -41,7 +41,8 @@ export default function ApplicationsPage() {
     useState<Application | null>(null);
 
   const [detailsLoading, setDetailsLoading] =
-    useState(false);
+    useState(false); const [deleting, setDeleting] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -142,6 +143,48 @@ export default function ApplicationsPage() {
       selectedStatus === "All" ||
       application.status.toUpperCase() === selectedStatus.toUpperCase()
   );
+
+  async function handleDeleteApplication(applicationId: string) {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this application? This action cannot be undone."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+    setError("");
+
+    try {
+      await deleteApplication(token, applicationId);
+
+      setApplications((current) =>
+        current.filter(
+          (application) => application.id !== applicationId
+        )
+      );
+
+      // If you have selected/viewed application state,
+      // clear it here as well.
+      setSelectedApplication(null);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete application"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -301,6 +344,16 @@ export default function ApplicationsPage() {
                         >
                           {detailsLoading ? "Loading..." : "View Details"}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteApplication(application.id)
+                          }
+                          disabled={deleting}
+                          className="rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deleting ? "Deleting..." : "Delete Application"}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -310,101 +363,101 @@ export default function ApplicationsPage() {
           </div>
         )}
 
-       {selectedApplication && (
-  <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-blue-400">
-          Application Details
-        </p>
+        {selectedApplication && (
+          <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-blue-400">
+                  Application Details
+                </p>
 
-        <h2 className="mt-2 text-2xl font-bold text-white">
-          {selectedApplication.job.title}
-        </h2>
+                <h2 className="mt-2 text-2xl font-bold text-white">
+                  {selectedApplication.job.title}
+                </h2>
 
-        <p className="mt-1 text-slate-400">
-          {selectedApplication.job.company}
-        </p>
-      </div>
+                <p className="mt-1 text-slate-400">
+                  {selectedApplication.job.company}
+                </p>
+              </div>
 
-      <button
-        type="button"
-        onClick={() =>
-          setSelectedApplication(null)
-        }
-        className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
-      >
-        Close
-      </button>
-    </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedApplication(null)
+                }
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+              >
+                Close
+              </button>
+            </div>
 
-    <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="rounded-lg bg-slate-950 p-5">
-        <p className="text-xs uppercase tracking-wide text-slate-500">
-          Status
-        </p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg bg-slate-950 p-5">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Status
+                </p>
 
-        <p className="mt-2 font-semibold text-blue-400">
-          {selectedApplication.status}
-        </p>
-      </div>
+                <p className="mt-2 font-semibold text-blue-400">
+                  {selectedApplication.status}
+                </p>
+              </div>
 
-      <div className="rounded-lg bg-slate-950 p-5">
-        <p className="text-xs uppercase tracking-wide text-slate-500">
-          Applied
-        </p>
+              <div className="rounded-lg bg-slate-950 p-5">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Applied
+                </p>
 
-        <p className="mt-2 text-sm text-slate-300">
-          {new Date(
-            selectedApplication.appliedAt
-          ).toLocaleDateString()}
-        </p>
-      </div>
+                <p className="mt-2 text-sm text-slate-300">
+                  {new Date(
+                    selectedApplication.appliedAt
+                  ).toLocaleDateString()}
+                </p>
+              </div>
 
-      <div className="rounded-lg bg-slate-950 p-5">
-        <p className="text-xs uppercase tracking-wide text-slate-500">
-          Location
-        </p>
+              <div className="rounded-lg bg-slate-950 p-5">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Location
+                </p>
 
-        <p className="mt-2 text-sm text-slate-300">
-          {selectedApplication.job.location || "—"}
-        </p>
-      </div>
+                <p className="mt-2 text-sm text-slate-300">
+                  {selectedApplication.job.location || "—"}
+                </p>
+              </div>
 
-      <div className="rounded-lg bg-slate-950 p-5">
-        <p className="text-xs uppercase tracking-wide text-slate-500">
-          Job
-        </p>
+              <div className="rounded-lg bg-slate-950 p-5">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Job
+                </p>
 
-        {selectedApplication.job.jobUrl ? (
-          <a
-            href={selectedApplication.job.jobUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block text-sm text-blue-400 hover:text-blue-300"
-          >
-            Open Job ↗
-          </a>
-        ) : (
-          <p className="mt-2 text-sm text-slate-500">
-            No URL
-          </p>
+                {selectedApplication.job.jobUrl ? (
+                  <a
+                    href={selectedApplication.job.jobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    Open Job ↗
+                  </a>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">
+                    No URL
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-lg bg-slate-950 p-5">
+              <h3 className="font-semibold text-white">
+                Notes
+              </h3>
+
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                {selectedApplication.notes ||
+                  "No notes added."}
+              </p>
+            </div>
+          </section>
         )}
-      </div>
-    </div>
-
-    <div className="mt-6 rounded-lg bg-slate-950 p-5">
-      <h3 className="font-semibold text-white">
-        Notes
-      </h3>
-
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
-        {selectedApplication.notes ||
-          "No notes added."}
-      </p>
-    </div>
-  </section>
-)}
       </div>
     </DashboardLayout>
   );

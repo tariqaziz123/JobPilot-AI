@@ -452,3 +452,59 @@ export async function getApplicationById(
 
   return response.json();
 }
+
+export async function updateApplication(
+  token: string,
+  applicationId: string,
+  data: {
+    status?: string;
+    notes?: string;
+  }
+) {
+  const response = await fetch(
+    `${API_URL}/api/applications/${applicationId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message || "Failed to update application"
+    );
+  }
+
+  return response.json();
+}
+
+export async function deleteApplication(
+  token: string,
+  applicationId: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/applications/${applicationId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+
+    throw new Error(
+      result?.message || "Failed to delete application"
+    );
+  }
+
+  return response.json();
+}
