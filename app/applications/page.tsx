@@ -104,7 +104,7 @@ export default function ApplicationsPage() {
   const filteredApplications = applications.filter(
     (application) =>
       selectedStatus === "All" ||
-      application.status === selectedStatus
+      application.status.toUpperCase() === selectedStatus.toUpperCase()
   );
 
   if (loading) {
