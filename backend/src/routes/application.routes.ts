@@ -4,7 +4,9 @@ import {
   createApplication,
   getApplications,
   updateApplicationStatus,
-  getApplicationById
+  getApplicationById,
+  updateApplication,
+  deleteApplication
 } from "../controllers/application.controller.js";
 
 import { authMiddleware } from "../middleware/auth.middleware.js";
@@ -23,5 +25,8 @@ router.get(
   authMiddleware,
   getApplicationById
 );
+router.patch("/:id", authMiddleware, updateApplication);
+
+router.delete("/:id", authMiddleware, deleteApplication);
 
 export default router;

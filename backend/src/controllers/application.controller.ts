@@ -199,33 +199,28 @@ export const getApplicationById = async (
   res: Response
 ) => {
   try {
-    if (!req.user?.userId) {
+    const userId = req.user?.userId;
+
+    if (!userId) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
       });
     }
 
-    const applicationId = req.params.applicationId;
+    const applicationId = req.params.id;
 
-    if (Array.isArray(applicationId)) {
+    if (typeof applicationId !== "string") {
       return res.status(400).json({
         success: false,
-        message: "Invalid applicationId",
-      });
-    }
-
-    if (!applicationId) {
-      return res.status(400).json({
-        success: false,
-        message: "applicationId is required",
+        message: "Invalid application ID",
       });
     }
 
     const application = await prisma.application.findFirst({
       where: {
         id: applicationId,
-        userId: req.user.userId,
+        userId,
       },
       include: {
         job: true,
@@ -244,14 +239,135 @@ export const getApplicationById = async (
       data: application,
     });
   } catch (error) {
-    console.error(
-      "Failed to fetch application:",
-      error
-    );
+    console.error("Failed to fetch application:", error);
 
     return res.status(500).json({
       success: false,
       message: "Failed to fetch application",
+    });
+  }
+};
+
+export const updateApplication = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const applicationId = req.params.id;
+
+    if (typeof applicationId !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application ID",
+      });
+    }
+
+    const { status, notes } = req.body;
+
+    const application = await prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    const updatedApplication =
+      await prisma.application.update({
+        where: {
+          id: applicationId,
+        },
+        data: {
+          ...(status !== undefined && { status }),
+          ...(notes !== undefined && { notes }),
+        },
+        include: {
+          job: true,
+        },
+      });
+
+    return res.status(200).json({
+      success: true,
+      data: updatedApplication,
+    });
+  } catch (error) {
+    console.error("Failed to update application:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update application",
+    });
+  }
+};
+
+export const deleteApplication = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const applicationId = req.params.id;
+
+    if (typeof applicationId !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application ID",
+      });
+    }
+
+    const application = await prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    await prisma.application.delete({
+      where: {
+        id: applicationId,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Application deleted successfully",
+    });
+  } catch (error) {
+    console.error("Failed to delete application:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete application",
     });
   }
 };
