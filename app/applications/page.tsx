@@ -40,8 +40,8 @@ export default function ApplicationsPage() {
   const [selectedApplication, setSelectedApplication] =
     useState<Application | null>(null);
 
-  const [detailsLoading, setDetailsLoading] =
-    useState(false); const [deleting, setDeleting] = useState(false);
+  const [detailsLoadingId, setDetailsLoadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -117,7 +117,7 @@ export default function ApplicationsPage() {
       return;
     }
 
-    setDetailsLoading(true);
+    setDetailsLoadingId(applicationId);
     setError("");
 
     try {
@@ -134,7 +134,7 @@ export default function ApplicationsPage() {
           : "Failed to load application"
       );
     } finally {
-      setDetailsLoading(false);
+      setDetailsLoadingId(applicationId);
     }
   }
 
@@ -160,7 +160,7 @@ export default function ApplicationsPage() {
       return;
     }
 
-    setDeleting(true);
+    setDeletingId(applicationId);
     setError("");
 
     try {
@@ -182,7 +182,7 @@ export default function ApplicationsPage() {
           : "Failed to delete application"
       );
     } finally {
-      setDeleting(false);
+      setDeletingId(null);
     }
   }
 
@@ -339,20 +339,24 @@ export default function ApplicationsPage() {
                           onClick={() =>
                             handleViewDetails(application.id)
                           }
-                          disabled={detailsLoading}
+                          disabled={detailsLoadingId === application.id}
                           className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-blue-500 hover:text-white"
                         >
-                          {detailsLoading ? "Loading..." : "View Details"}
+                          {detailsLoadingId === application.id
+                            ? "Loading..."
+                            : "View Details"}
                         </button>
                         <button
                           type="button"
                           onClick={() =>
                             handleDeleteApplication(application.id)
                           }
-                          disabled={deleting}
+                          disabled={deletingId === application.id}
                           className="rounded-lg border border-red-800 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {deleting ? "Deleting..." : "Delete Application"}
+                          {deletingId === application.id
+                            ? "Deleting..."
+                            : "Delete Application"}
                         </button>
                       </td>
                     </tr>

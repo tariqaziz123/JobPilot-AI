@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations } from "@/lib/api";
@@ -97,7 +97,7 @@ function AIToolsContent() {
     const [recommendationsError, setRecommendationsError] =
         useState("");
     const [error, setError] = useState("");
-
+    const router = useRouter();
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
 
@@ -124,15 +124,6 @@ function AIToolsContent() {
 
                 setJobs(jobsWithDescription);
 
-                if (
-                    jobIdFromUrl &&
-                    jobsWithDescription.some(
-                        (job: Job) => job.id === jobIdFromUrl
-                    )
-                ) {
-                    setSelectedJobId(jobIdFromUrl);
-                }
-
                 setHistory(analysesResult.data);
                 const resumeResult =
                     await getResumeAnalyses(token);
@@ -150,7 +141,23 @@ function AIToolsContent() {
         }
 
         loadData();
-    }, [jobIdFromUrl]);
+    }, []);
+
+    useEffect(() => {
+        if (!jobIdFromUrl || jobs.length === 0) {
+            return;
+        }
+
+        const jobExists = jobs.some(
+            (job) => job.id === jobIdFromUrl
+        );
+
+        if (jobExists) {
+            setSelectedJobId(jobIdFromUrl);
+            setAnalysis(null);
+            setError("");
+        }
+    }, [jobIdFromUrl, jobs]);
 
     async function loadRecommendations() {
         const token = getToken();
@@ -774,8 +781,7 @@ function AIToolsContent() {
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        window.location.href =
-                                                        `/ai-tools?jobId=${recommendation.jobId}`
+                                                        router.push(`/ai-tools?jobId=${recommendation.jobId}`)
                                                     }
                                                     className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500"
                                                 >
@@ -1182,19 +1188,19 @@ function AIToolsContent() {
 }
 
 function AIToolsLoading() {
-  return (
-    <DashboardLayout>
-      <div className="p-8 text-slate-400">
-        Loading AI Tools...
-      </div>
-    </DashboardLayout>
-  );
+    return (
+        <DashboardLayout>
+            <div className="p-8 text-slate-400">
+                Loading AI Tools...
+            </div>
+        </DashboardLayout>
+    );
 }
 
 export default function AIToolsPage() {
-  return (
-    <Suspense fallback={<AIToolsLoading />}>
-      <AIToolsContent />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<AIToolsLoading />}>
+            <AIToolsContent />
+        </Suspense>
+    );
 }
