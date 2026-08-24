@@ -32,6 +32,31 @@ const applicationStatuses = [
 
 type ApplicationStatus = (typeof applicationStatuses)[number];
 
+function getStatusClasses(status: string) {
+  switch (status.toLowerCase()) {
+    case "applied":
+      return "border-blue-800 bg-blue-950/40 text-blue-400";
+
+    case "screening":
+      return "border-cyan-800 bg-cyan-950/40 text-cyan-400";
+
+    case "interview":
+      return "border-purple-800 bg-purple-950/40 text-purple-400";
+
+    case "assessment":
+      return "border-amber-800 bg-amber-950/40 text-amber-400";
+
+    case "offer":
+      return "border-emerald-800 bg-emerald-950/40 text-emerald-400";
+
+    case "rejected":
+      return "border-red-800 bg-red-950/40 text-red-400";
+
+    default:
+      return "border-slate-700 bg-slate-900 text-slate-400";
+  }
+}
+
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<
@@ -42,6 +67,8 @@ export default function ApplicationsPage() {
 
   const [detailsLoadingId, setDetailsLoadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingStatusId, setUpdatingStatusId] =
+  useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -73,39 +100,48 @@ export default function ApplicationsPage() {
     loadApplications();
   }, []);
 
-  async function handleStatusChange(
-    applicationId: string,
-    status: string
-  ) {
-    const token = getToken();
+async function handleStatusChange(
+  applicationId: string,
+  status: string
+) {
+  const token = getToken();
 
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
-
-    try {
-      const result = await updateApplicationStatus(
-        token,
-        applicationId,
-        status
-      );
-
-      setApplications((current) =>
-        current.map((application) =>
-          application.id === applicationId
-            ? result.data
-            : application
-        )
-      );
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update application status"
-      );
-    }
+  if (!token) {
+    window.location.href = "/login";
+    return;
   }
+
+  setUpdatingStatusId(applicationId);
+  setError("");
+
+  try {
+    const result = await updateApplicationStatus(
+      token,
+      applicationId,
+      status
+    );
+
+    setApplications((current) =>
+      current.map((application) =>
+        application.id === applicationId
+          ? result.data
+          : application
+      )
+    );
+
+    if (selectedApplication?.id === applicationId) {
+      setSelectedApplication(result.data);
+    }
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to update application status"
+    );
+  } finally {
+    setUpdatingStatusId(null);
+  }
+}
 
   async function handleViewDetails(
     applicationId: string
@@ -310,23 +346,34 @@ export default function ApplicationsPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <select
-                          value={application.status}
-                          onChange={(event) =>
-                            handleStatusChange(
-                              application.id,
-                              event.target.value
-                            )
-                          }
-                          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-medium text-blue-400 outline-none focus:border-blue-500"
-                        >
-                          {applicationStatuses.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
+  <div className="flex flex-col gap-2">
+    <span
+      className={`w-fit rounded-full border px-3 py-1 text-xs font-medium ${getStatusClasses(
+        application.status
+      )}`}
+    >
+      {application.status}
+    </span>
+
+    <select
+      value={application.status}
+      onChange={(event) =>
+        handleStatusChange(
+          application.id,
+          event.target.value
+        )
+      }
+      disabled={updatingStatusId === application.id}
+      className="w-fit rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {applicationStatuses.map((status) => (
+        <option key={status} value={status}>
+          {status}
+        </option>
+      ))}
+    </select>
+  </div>
+</td>
 
                       <td className="px-6 py-4 text-sm text-slate-400">
                         {new Date(
