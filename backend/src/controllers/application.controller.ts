@@ -123,7 +123,9 @@ export const updateApplicationStatus = async (
   res: Response
 ) => {
   try {
-    if (!req.user?.userId) {
+    const userId = req.user?.userId;
+
+    if (!userId) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
@@ -132,20 +134,14 @@ export const updateApplicationStatus = async (
 
     const applicationId = req.params.applicationId;
 
-    if (Array.isArray(applicationId)) {
+    if (typeof applicationId !== "string") {
       return res.status(400).json({
         success: false,
         message: "Invalid applicationId",
       });
     }
-    const { status } = req.body;
 
-    if (!applicationId) {
-      return res.status(400).json({
-        success: false,
-        message: "applicationId is required",
-      });
-    }
+    const { status } = req.body;
 
     if (!status) {
       return res.status(400).json({
@@ -154,16 +150,9 @@ export const updateApplicationStatus = async (
       });
     }
 
-    const allowedStatuses = [
-      "Applied",
-      "Screening",
-      "Interview",
-      "Assessment",
-      "Offer",
-      "Rejected",
-    ];
+    const normalizedStatus = status.toUpperCase();
 
-    if (!allowedStatuses.includes(status)) {
+    if (!APPLICATION_STATUSES.includes(normalizedStatus as any)) {
       return res.status(400).json({
         success: false,
         message: "Invalid application status",
@@ -173,7 +162,7 @@ export const updateApplicationStatus = async (
     const application = await prisma.application.findFirst({
       where: {
         id: applicationId,
-        userId: req.user.userId,
+        userId,
       },
     });
 
@@ -184,28 +173,24 @@ export const updateApplicationStatus = async (
       });
     }
 
-    const updatedApplication =
-      await prisma.application.update({
-        where: {
-          id: applicationId,
-        },
-        data: {
-          status,
-        },
-        include: {
-          job: true,
-        },
-      });
+    const updatedApplication = await prisma.application.update({
+      where: {
+        id: applicationId,
+      },
+      data: {
+        status: normalizedStatus as any,
+      },
+      include: {
+        job: true,
+      },
+    });
 
     return res.status(200).json({
       success: true,
       data: updatedApplication,
     });
   } catch (error) {
-    console.error(
-      "Failed to update application status:",
-      error
-    );
+    console.error("Failed to update application status:", error);
 
     return res.status(500).json({
       success: false,
@@ -228,7 +213,7 @@ export const getApplicationById = async (
       });
     }
 
-    const applicationId = req.params.id;
+    const applicationId = req.params.applicationId;
 
     if (typeof applicationId !== "string") {
       return res.status(400).json({

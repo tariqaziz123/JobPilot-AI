@@ -415,100 +415,132 @@ async function handleStatusChange(
         )}
 
         {selectedApplication && (
-          <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-blue-400">
-                  Application Details
-                </p>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    {/* Backdrop */}
+    <button
+      type="button"
+      aria-label="Close application details"
+      onClick={() => setSelectedApplication(null)}
+      className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+    />
 
-                <h2 className="mt-2 text-2xl font-bold text-white">
-                  {selectedApplication.job.title}
-                </h2>
+    {/* Modal */}
+    <section className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-6">
+        <div>
+          <p className="text-sm font-medium text-blue-400">
+            Application Details
+          </p>
 
-                <p className="mt-1 text-slate-400">
-                  {selectedApplication.job.company}
-                </p>
-              </div>
+          <h2 className="mt-2 text-2xl font-bold text-white">
+            {selectedApplication.job.title}
+          </h2>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedApplication(null)
-                }
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+          <p className="mt-1 text-slate-400">
+            {selectedApplication.job.company}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSelectedApplication(null)}
+          className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Status */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Status
+            </p>
+
+            <span
+              className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-sm font-medium ${getStatusClasses(
+                selectedApplication.status
+              )}`}
+            >
+              {selectedApplication.status}
+            </span>
+          </div>
+
+          {/* Applied */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Applied
+            </p>
+
+            <p className="mt-3 text-sm text-slate-300">
+              {new Date(
+                selectedApplication.appliedAt
+              ).toLocaleDateString()}
+            </p>
+          </div>
+
+          {/* Location */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Location
+            </p>
+
+            <p className="mt-3 text-sm text-slate-300">
+              {selectedApplication.job.location || "—"}
+            </p>
+          </div>
+
+          {/* Job URL */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Job Posting
+            </p>
+
+            {selectedApplication.job.jobUrl ? (
+              <a
+                href={selectedApplication.job.jobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex text-sm font-medium text-blue-400 hover:text-blue-300"
               >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg bg-slate-950 p-5">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Status
-                </p>
-
-                <p className="mt-2 font-semibold text-blue-400">
-                  {selectedApplication.status}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-slate-950 p-5">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Applied
-                </p>
-
-                <p className="mt-2 text-sm text-slate-300">
-                  {new Date(
-                    selectedApplication.appliedAt
-                  ).toLocaleDateString()}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-slate-950 p-5">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Location
-                </p>
-
-                <p className="mt-2 text-sm text-slate-300">
-                  {selectedApplication.job.location || "—"}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-slate-950 p-5">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Job
-                </p>
-
-                {selectedApplication.job.jobUrl ? (
-                  <a
-                    href={selectedApplication.job.jobUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    Open Job ↗
-                  </a>
-                ) : (
-                  <p className="mt-2 text-sm text-slate-500">
-                    No URL
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-lg bg-slate-950 p-5">
-              <h3 className="font-semibold text-white">
-                Notes
-              </h3>
-
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
-                {selectedApplication.notes ||
-                  "No notes added."}
+                Open Job Posting ↗
+              </a>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">
+                No job URL available
               </p>
-            </div>
-          </section>
-        )}
+            )}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
+          <h3 className="font-semibold text-white">
+            Notes
+          </h3>
+
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+            {selectedApplication.notes || "No notes added."}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end border-t border-slate-800 p-6">
+        <button
+          type="button"
+          onClick={() => setSelectedApplication(null)}
+          className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+        >
+          Close
+        </button>
+      </div>
+    </section>
+  </div>
+)}
       </div>
     </DashboardLayout>
   );
