@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { getApplications, updateApplicationStatus, getApplicationById, deleteApplication } from "@/lib/api";
+import { getApplications, updateApplicationStatus, getApplicationById, deleteApplication, updateApplication } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Application = {
@@ -64,11 +64,16 @@ export default function ApplicationsPage() {
   >("All");
   const [selectedApplication, setSelectedApplication] =
     useState<Application | null>(null);
+  const [editingApplication, setEditingApplication] =
+    useState<Application | null>(null);
+
+  const [editNotes, setEditNotes] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [detailsLoadingId, setDetailsLoadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] =
-  useState<string | null>(null);
+    useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -100,48 +105,48 @@ export default function ApplicationsPage() {
     loadApplications();
   }, []);
 
-async function handleStatusChange(
-  applicationId: string,
-  status: string
-) {
-  const token = getToken();
+  async function handleStatusChange(
+    applicationId: string,
+    status: string
+  ) {
+    const token = getToken();
 
-  if (!token) {
-    window.location.href = "/login";
-    return;
-  }
-
-  setUpdatingStatusId(applicationId);
-  setError("");
-
-  try {
-    const result = await updateApplicationStatus(
-      token,
-      applicationId,
-      status
-    );
-
-    setApplications((current) =>
-      current.map((application) =>
-        application.id === applicationId
-          ? result.data
-          : application
-      )
-    );
-
-    if (selectedApplication?.id === applicationId) {
-      setSelectedApplication(result.data);
+    if (!token) {
+      window.location.href = "/login";
+      return;
     }
-  } catch (error) {
-    setError(
-      error instanceof Error
-        ? error.message
-        : "Failed to update application status"
-    );
-  } finally {
-    setUpdatingStatusId(null);
+
+    setUpdatingStatusId(applicationId);
+    setError("");
+
+    try {
+      const result = await updateApplicationStatus(
+        token,
+        applicationId,
+        status
+      );
+
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId
+            ? result.data
+            : application
+        )
+      );
+
+      if (selectedApplication?.id === applicationId) {
+        setSelectedApplication(result.data);
+      }
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update application status"
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
   }
-}
 
   async function handleViewDetails(
     applicationId: string
@@ -170,7 +175,7 @@ async function handleStatusChange(
           : "Failed to load application"
       );
     } finally {
-      setDetailsLoadingId(applicationId);
+      setDetailsLoadingId(null);
     }
   }
 
@@ -179,6 +184,51 @@ async function handleStatusChange(
       selectedStatus === "All" ||
       application.status.toUpperCase() === selectedStatus.toUpperCase()
   );
+
+  async function handleSaveApplication() {
+    const token = getToken();
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!editingApplication) {
+      return;
+    }
+
+    setSavingEdit(true);
+    setError("");
+
+    try {
+      const result = await updateApplication(
+        token,
+        editingApplication.id,
+        {
+          notes: editNotes,
+        }
+      );
+
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === editingApplication.id
+            ? result.data
+            : application
+        )
+      );
+
+      setSelectedApplication(result.data);
+      setEditingApplication(null);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update application"
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   async function handleDeleteApplication(applicationId: string) {
     const token = getToken();
@@ -346,34 +396,34 @@ async function handleStatusChange(
                       </td>
 
                       <td className="px-6 py-4">
-  <div className="flex flex-col gap-2">
-    <span
-      className={`w-fit rounded-full border px-3 py-1 text-xs font-medium ${getStatusClasses(
-        application.status
-      )}`}
-    >
-      {application.status}
-    </span>
+                        <div className="flex flex-col gap-2">
+                          <span
+                            className={`w-fit rounded-full border px-3 py-1 text-xs font-medium ${getStatusClasses(
+                              application.status
+                            )}`}
+                          >
+                            {application.status}
+                          </span>
 
-    <select
-      value={application.status}
-      onChange={(event) =>
-        handleStatusChange(
-          application.id,
-          event.target.value
-        )
-      }
-      disabled={updatingStatusId === application.id}
-      className="w-fit rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {applicationStatuses.map((status) => (
-        <option key={status} value={status}>
-          {status}
-        </option>
-      ))}
-    </select>
-  </div>
-</td>
+                          <select
+                            value={application.status}
+                            onChange={(event) =>
+                              handleStatusChange(
+                                application.id,
+                                event.target.value
+                              )
+                            }
+                            disabled={updatingStatusId === application.id}
+                            className="w-fit rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {applicationStatuses.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </td>
 
                       <td className="px-6 py-4 text-sm text-slate-400">
                         {new Date(
@@ -415,132 +465,188 @@ async function handleStatusChange(
         )}
 
         {selectedApplication && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    {/* Backdrop */}
-    <button
-      type="button"
-      aria-label="Close application details"
-      onClick={() => setSelectedApplication(null)}
-      className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-    />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <button
+              type="button"
+              aria-label="Close application details"
+              onClick={() => setSelectedApplication(null)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
 
-    {/* Modal */}
-    <section className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-6">
-        <div>
-          <p className="text-sm font-medium text-blue-400">
-            Application Details
-          </p>
 
-          <h2 className="mt-2 text-2xl font-bold text-white">
-            {selectedApplication.job.title}
-          </h2>
+            {/* Modal */}
+            <section className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-6">
+                <div>
+                  <p className="text-sm font-medium text-blue-400">
+                    Application Details
+                  </p>
 
-          <p className="mt-1 text-slate-400">
-            {selectedApplication.job.company}
-          </p>
-        </div>
+                  <h2 className="mt-2 text-2xl font-bold text-white">
+                    {selectedApplication.job.title}
+                  </h2>
 
-        <button
-          type="button"
-          onClick={() => setSelectedApplication(null)}
-          className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white"
-        >
-          ✕
-        </button>
-      </div>
+                  <p className="mt-1 text-slate-400">
+                    {selectedApplication.job.company}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingApplication(selectedApplication);
+                      setEditNotes(selectedApplication.notes ?? "");
+                    }}
+                    className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-blue-500 hover:text-white"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedApplication(null)}
+                    className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
 
-      {/* Content */}
-      <div className="p-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Status */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Status
-            </p>
+              {/* Content */}
+              <div className="p-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* Status */}
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Status
+                    </p>
 
-            <span
-              className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-sm font-medium ${getStatusClasses(
-                selectedApplication.status
-              )}`}
-            >
-              {selectedApplication.status}
-            </span>
+                    <span
+                      className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-sm font-medium ${getStatusClasses(
+                        selectedApplication.status
+                      )}`}
+                    >
+                      {selectedApplication.status}
+                    </span>
+                  </div>
+
+                  {/* Applied */}
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Applied
+                    </p>
+
+                    <p className="mt-3 text-sm text-slate-300">
+                      {new Date(
+                        selectedApplication.appliedAt
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  {/* Location */}
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Location
+                    </p>
+
+                    <p className="mt-3 text-sm text-slate-300">
+                      {selectedApplication.job.location || "—"}
+                    </p>
+                  </div>
+
+                  {/* Job URL */}
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Job Posting
+                    </p>
+
+                    {selectedApplication.job.jobUrl ? (
+                      <a
+                        href={selectedApplication.job.jobUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex text-sm font-medium text-blue-400 hover:text-blue-300"
+                      >
+                        Open Job Posting ↗
+                      </a>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No job URL available
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {/* Notes */}
+                <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
+                  {editingApplication ? (
+                    <>
+                      <h3 className="font-semibold text-white">
+                        Edit Notes
+                      </h3>
+
+                      <textarea
+                        value={editNotes}
+                        onChange={(event) => setEditNotes(event.target.value)}
+                        rows={6}
+                        placeholder="Add notes about this application..."
+                        className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+                      />
+
+                      <div className="mt-4 flex gap-3">
+                        <button
+                          type="button"
+                          onClick={handleSaveApplication}
+                          disabled={savingEdit}
+                          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {savingEdit ? "Saving..." : "Save Changes"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingApplication(null);
+                            setEditNotes("");
+                          }}
+                          disabled={savingEdit}
+                          className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="font-semibold text-white">
+                        Notes
+                      </h3>
+
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                        {selectedApplication.notes || "No notes added."}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end border-t border-slate-800 p-6">
+                <button
+                  type="button"
+                  onClick={() => setSelectedApplication(null)}
+                  className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                >
+                  Close
+                </button>
+              </div>
+            </section>
+
+
           </div>
-
-          {/* Applied */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Applied
-            </p>
-
-            <p className="mt-3 text-sm text-slate-300">
-              {new Date(
-                selectedApplication.appliedAt
-              ).toLocaleDateString()}
-            </p>
-          </div>
-
-          {/* Location */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Location
-            </p>
-
-            <p className="mt-3 text-sm text-slate-300">
-              {selectedApplication.job.location || "—"}
-            </p>
-          </div>
-
-          {/* Job URL */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Job Posting
-            </p>
-
-            {selectedApplication.job.jobUrl ? (
-              <a
-                href={selectedApplication.job.jobUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex text-sm font-medium text-blue-400 hover:text-blue-300"
-              >
-                Open Job Posting ↗
-              </a>
-            ) : (
-              <p className="mt-3 text-sm text-slate-500">
-                No job URL available
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
-          <h3 className="font-semibold text-white">
-            Notes
-          </h3>
-
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
-            {selectedApplication.notes || "No notes added."}
-          </p>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex justify-end border-t border-slate-800 p-6">
-        <button
-          type="button"
-          onClick={() => setSelectedApplication(null)}
-          className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-        >
-          Close
-        </button>
-      </div>
-    </section>
-  </div>
-)}
+        )}
       </div>
     </DashboardLayout>
   );
