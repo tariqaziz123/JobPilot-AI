@@ -23,3 +23,7 @@ export type JobRecommendation = {
   strengths: string[];
   missingSkills: string[];
 };
+
+export type CoverLetterResult = {
+  content: string;
+};

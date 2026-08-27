@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 import { env } from "../config/env.js";
 
-import { JobAnalysisResult, ResumeAnalysisResult, JobRecommendation } from "../types/ai.js"
+import { JobAnalysisResult, ResumeAnalysisResult, JobRecommendation, CoverLetterResult } from "../types/ai.js"
 
 const ai = new GoogleGenAI({
   apiKey: env.geminiApiKey,
@@ -338,4 +338,81 @@ Rules:
   return validateJobRecommendations(
     recommendations
   );
+}
+
+export async function generateCoverLetter(
+  candidateProfile: string,
+  job: {
+    title: string;
+    company: string;
+    description: string | null;
+  }
+): Promise<CoverLetterResult> {
+  const prompt = `
+You are an expert technical recruiter and professional cover letter writer.
+
+Write a personalized cover letter for the candidate applying to the job below.
+
+CANDIDATE PROFILE:
+${candidateProfile}
+
+JOB:
+Company: ${job.company}
+Title: ${job.title}
+
+JOB DESCRIPTION:
+${job.description ?? "No description provided"}
+
+Requirements:
+- Write a professional, concise cover letter.
+- Tailor the letter specifically to this job.
+- Highlight relevant skills and experience from the candidate profile.
+- Do not invent experience, technologies, achievements, employers, or responsibilities.
+- Do not mention that AI was used.
+- Avoid generic statements that could apply to any job.
+- Keep the cover letter between 250 and 400 words.
+- Use a professional but natural tone.
+- Do not include placeholders such as [Hiring Manager] or [Company Name].
+- Do not include an email subject.
+- Do not use markdown.
+- Return ONLY valid JSON.
+
+Return exactly this structure:
+
+{
+  "content": "string"
+}
+`;
+
+  const response = await generateAIResponse(prompt);
+
+  try {
+    const parsed =
+      parseAIJson<CoverLetterResult>(response);
+
+    if (
+      !parsed ||
+      typeof parsed.content !== "string" ||
+      !parsed.content.trim()
+    ) {
+      throw new Error(
+        "Invalid cover letter structure"
+      );
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error(
+      "Failed to parse cover letter AI response:",
+      response
+    );
+
+    throw new Error(
+      `Gemini returned invalid cover letter JSON: ${
+        error instanceof Error
+          ? error.message
+          : "Unknown error"
+      }`
+    );
+  }
 }
