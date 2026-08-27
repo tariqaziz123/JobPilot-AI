@@ -1,9 +1,29 @@
-export type ResumeAnalysis = {
-  overallScore: number;
-  experienceMatch: number;
-  skillsMatch: number;
+export type JobAnalysisResult = {
+  matchScore: number;
+  atsScore: number;
+  skillsMatched: string[];
+  missingSkills: string[];
+  recommendation: string;
+};
+
+export type ResumeAnalysisResult = {
+  resumeScore: number;
+  atsScore: number;
+  strengths: string[];
+  weaknesses: string[];
   missingKeywords: string[];
-  matchedSkills: string[];
-  skillGaps: string[];
-  recommendations: string[];
+  improvements: string[];
+  recommendedSkills: string[];
+};
+
+export type JobRecommendation = {
+  jobId: string;
+  matchScore: number;
+  reason: string;
+  strengths: string[];
+  missingSkills: string[];
+};
+
+export type CoverLetterResult = {
+  content: string;
 };
