@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations } from "@/lib/api";
+import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Job = {
@@ -68,6 +68,13 @@ type JobRecommendation = {
     };
 };
 
+type CoverLetter = {
+    id: string;
+    jobId: string;
+    content: string;
+    createdAt: string;
+};
+
 function AIToolsContent() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [selectedJobId, setSelectedJobId] = useState("");
@@ -97,6 +104,16 @@ function AIToolsContent() {
     const [recommendationsError, setRecommendationsError] =
         useState("");
     const [error, setError] = useState("");
+    const [coverLetter, setCoverLetter] =
+        useState<CoverLetter | null>(null);
+
+    const [coverLetterLoading, setCoverLetterLoading] =
+        useState(false);
+
+    const [coverLetterError, setCoverLetterError] =
+        useState("");
+
+    const [copied, setCopied] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
@@ -235,6 +252,41 @@ function AIToolsContent() {
         );
     }
 
+    async function handleGenerateCoverLetter() {
+        const token = getToken();
+
+        if (!token) {
+            window.location.href = "/login";
+            return;
+        }
+
+        if (!selectedJobId) {
+            setCoverLetterError("Please select a job first.");
+            return;
+        }
+
+        setCoverLetterLoading(true);
+        setCoverLetterError("");
+        setCoverLetter(null);
+        setCopied(false);
+
+        try {
+            const result = await generateCoverLetter(
+                token,
+                selectedJobId
+            );
+
+            setCoverLetter(result.data);
+        } catch (error) {
+            setCoverLetterError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to generate cover letter"
+            );
+        } finally {
+            setCoverLetterLoading(false);
+        }
+    }
     async function handleResumeAnalysis() {
         const token = getToken();
 
@@ -638,6 +690,140 @@ function AIToolsContent() {
                             </div>
                         </section>
                     )}
+                    <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                        <div>
+                            <p className="text-sm font-medium text-purple-400">
+                                AI Writing Tool
+                            </p>
+
+                            <h2 className="mt-2 text-2xl font-bold text-white">
+                                Cover Letter Generator
+                            </h2>
+
+                            <p className="mt-2 text-sm text-slate-400">
+                                Generate a personalized cover letter based on your
+                                resume, skills, and the selected job description.
+                            </p>
+                        </div>
+
+                        <div className="mt-6">
+                            <label
+                                htmlFor="cover-letter-job"
+                                className="block text-sm font-medium text-slate-300"
+                            >
+                                Select Job
+                            </label>
+
+                            <select
+                                id="cover-letter-job"
+                                value={selectedJobId}
+                                onChange={(event) => {
+                                    setSelectedJobId(event.target.value);
+                                    setCoverLetter(null);
+                                    setCoverLetterError("");
+                                    setCopied(false);
+                                }}
+                                className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-purple-500"
+                            >
+                                <option value="">
+                                    Select a job...
+                                </option>
+
+                                {jobs.map((job) => (
+                                    <option
+                                        key={job.id}
+                                        value={job.id}
+                                    >
+                                        {job.title} — {job.company}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGenerateCoverLetter}
+                            disabled={
+                                !selectedJobId ||
+                                coverLetterLoading
+                            }
+                            className="mt-6 rounded-lg bg-purple-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {coverLetterLoading
+                                ? "Generating..."
+                                : "Generate Cover Letter"}
+                        </button>
+
+                        {coverLetterError && (
+                            <div className="mt-6 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-400">
+                                {coverLetterError}
+                            </div>
+                        )}
+
+                        {coverLetterLoading && (
+                            <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-6">
+                                <p className="text-sm text-slate-400">
+                                    Writing a personalized cover letter...
+                                </p>
+                            </div>
+                        )}
+
+                        {coverLetter && (
+                            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-6">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-purple-400">
+                                            Generated Cover Letter
+                                        </p>
+
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            Created{" "}
+                                            {new Date(
+                                                coverLetter.createdAt
+                                            ).toLocaleString()}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            await navigator.clipboard.writeText(
+                                                coverLetter.content
+                                            );
+
+                                            setCopied(true);
+
+                                            setTimeout(() => {
+                                                setCopied(false);
+                                            }, 2000);
+                                        }}
+                                        className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-purple-500 hover:text-white"
+                                    >
+                                        {copied
+                                            ? "Copied!"
+                                            : "Copy Cover Letter"}
+                                    </button>
+                                </div>
+
+                                <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900 p-6">
+                                    <p className="whitespace-pre-line text-sm leading-7 text-slate-300">
+                                        {coverLetter.content}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCoverLetter(null);
+                                        setCopied(false);
+                                    }}
+                                    className="mt-4 text-sm text-slate-500 transition hover:text-white"
+                                >
+                                    Clear
+                                </button>
+                            </div>
+                        )}
+                    </section>
                     <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div>
