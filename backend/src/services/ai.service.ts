@@ -249,6 +249,15 @@ ${resumeText}
   }
 }
 
+  function isPriority(
+  value: unknown
+): value is "HIGH" | "MEDIUM" | "LOW" {
+  return (
+    value === "HIGH" ||
+    value === "MEDIUM" ||
+    value === "LOW"
+  );
+}
 function validateJobRecommendations(
   recommendations: JobRecommendation[]
 ): JobRecommendation[] {
@@ -264,7 +273,8 @@ function validateJobRecommendations(
       !isScore(recommendation.matchScore) ||
       typeof recommendation.reason !== "string" ||
       !isStringArray(recommendation.strengths) ||
-      !isStringArray(recommendation.missingSkills)
+      !isStringArray(recommendation.missingSkills) ||
+      !isPriority(recommendation.priority)
     ) {
       throw new Error(
         "AI returned an invalid job recommendation"
@@ -317,7 +327,8 @@ Return exactly this structure:
     "matchScore": number,
     "reason": "string",
     "strengths": ["string"],
-    "missingSkills": ["string"]
+    "missingSkills": ["string"],
+    "priority": "HIGH"
   }
 ]
 
@@ -328,6 +339,10 @@ Rules:
 - Do not invent candidate experience.
 - Base the recommendation only on the candidate profile and job description.
 - Keep reason concise and useful.
+- priority must be exactly one of: HIGH, MEDIUM, LOW.
+- HIGH: matchScore 80-100 and strong alignment with the candidate.
+- MEDIUM: matchScore 60-79 or moderate alignment.
+- LOW: matchScore below 60 or significant skill gaps.
 `;
 
   const response = await generateAIResponse(prompt);

@@ -22,6 +22,7 @@ export type JobRecommendation = {
   reason: string;
   strengths: string[];
   missingSkills: string[];
+  priority: "HIGH" | "MEDIUM" | "LOW";
 };
 
 export type CoverLetterResult = {
