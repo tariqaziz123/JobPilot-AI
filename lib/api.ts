@@ -538,3 +538,26 @@ export async function generateCoverLetter(
 
   return result;
 }
+
+export async function getCoverLetters(
+  token: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/cover-letters`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to fetch cover letters"
+    );
+  }
+
+  return result;
+}

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter } from "@/lib/api";
+import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter, getCoverLetters } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
 type Job = {
@@ -73,7 +73,13 @@ type CoverLetter = {
     jobId: string;
     content: string;
     createdAt: string;
+    job: {
+        id: string;
+        title: string;
+        company: string;
+    };
 };
+
 
 function AIToolsContent() {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -114,6 +120,9 @@ function AIToolsContent() {
         useState("");
 
     const [copied, setCopied] = useState(false);
+    const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
+    const [selectedCoverLetter, setSelectedCoverLetter] =
+        useState<CoverLetter | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
@@ -146,6 +155,10 @@ function AIToolsContent() {
                     await getResumeAnalyses(token);
 
                 setResumeHistory(resumeResult.data);
+                const coverLetterResult =
+                    await getCoverLetters(token);
+
+                setCoverLetters(coverLetterResult.data);
             } catch (error) {
                 setError(
                     error instanceof Error
@@ -479,6 +492,7 @@ function AIToolsContent() {
                             </div>
                         </section>
                     )}
+
                     <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
                         <div>
                             <p className="text-sm font-medium text-purple-400">
@@ -857,6 +871,117 @@ function AIToolsContent() {
                             </div>
                         )}
                     </section>
+                    <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                        <div>
+                            <p className="text-sm font-medium text-purple-400">
+                                History
+                            </p>
+
+                            <h2 className="mt-2 text-2xl font-bold text-white">
+                                Cover Letter History
+                            </h2>
+
+                            <p className="mt-2 text-sm text-slate-400">
+                                View cover letters you previously generated.
+                            </p>
+                        </div>
+
+                        {coverLetters.length === 0 ? (
+                            <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-6 text-center">
+                                <p className="text-sm text-slate-400">
+                                    No cover letters generated yet.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="mt-6 space-y-3">
+                                {coverLetters.map((letter) => (
+                                    <div
+                                        key={letter.id}
+                                        className="flex flex-col gap-4 rounded-lg border border-slate-800 bg-slate-950 p-5 sm:flex-row sm:items-center sm:justify-between"
+                                    >
+                                        <div>
+                                            <p className="font-medium text-white">
+                                                {letter.job.title}
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-slate-400">
+                                                {letter.job.company}
+                                            </p>
+
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                {new Date(
+                                                    letter.createdAt
+                                                ).toLocaleString()}
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setSelectedCoverLetter(letter)
+                                            }
+                                            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-blue-500 hover:text-white"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                    {selectedCoverLetter && (
+                        <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-medium text-purple-400">
+                                        Cover Letter
+                                    </p>
+
+                                    <h2 className="mt-2 text-2xl font-bold text-white">
+                                        {selectedCoverLetter.job.title}
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-slate-400">
+                                        {selectedCoverLetter.job.company}
+                                    </p>
+
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {new Date(
+                                            selectedCoverLetter.createdAt
+                                        ).toLocaleString()}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedCoverLetter(null)
+                                    }
+                                    className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+                                >
+                                    Close
+                                </button>
+                            </div>
+
+                            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-6">
+                                <p className="whitespace-pre-line text-sm leading-7 text-slate-300">
+                                    {selectedCoverLetter.content}
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    navigator.clipboard.writeText(
+                                        selectedCoverLetter.content
+                                    )
+                                }
+                                className="mt-5 rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-500"
+                            >
+                                Copy Cover Letter
+                            </button>
+                        </section>
+                    )}
                     <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div>
