@@ -787,40 +787,73 @@ function AIToolsContent() {
                                     <button
                                         type="button"
                                         onClick={async () => {
-                                            await navigator.clipboard.writeText(
-                                                coverLetter.content
-                                            );
+                                            try {
+                                                await navigator.clipboard.writeText(
+                                                    coverLetter.content
+                                                );
 
-                                            setCopied(true);
+                                                setCopied(true);
 
-                                            setTimeout(() => {
-                                                setCopied(false);
-                                            }, 2000);
+                                                setTimeout(() => {
+                                                    setCopied(false);
+                                                }, 2000);
+                                            } catch {
+                                                setCoverLetterError(
+                                                    "Unable to copy the cover letter. Please copy it manually."
+                                                );
+                                            }
                                         }}
                                         className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-purple-500 hover:text-white"
                                     >
                                         {copied
-                                            ? "Copied!"
+                                            ? "✓ Copied to Clipboard"
                                             : "Copy Cover Letter"}
                                     </button>
                                 </div>
-
-                                <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900 p-6">
-                                    <p className="whitespace-pre-line text-sm leading-7 text-slate-300">
-                                        {coverLetter.content}
+                                {copied && (
+                                    <p className="mt-3 text-sm text-emerald-400">
+                                        Your cover letter has been copied. You can now paste it into
+                                        your application or email.
                                     </p>
+                                )}
+                                <div className="mt-6 overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+                                    <div className="border-b border-slate-800 px-6 py-4">
+                                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                            Cover Letter
+                                        </p>
+                                    </div>
+
+                                    <div className="p-6">
+                                        <p className="whitespace-pre-line text-sm leading-7 text-slate-300">
+                                            {coverLetter.content}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setCoverLetter(null);
-                                        setCopied(false);
-                                    }}
-                                    className="mt-4 text-sm text-slate-500 transition hover:text-white"
-                                >
-                                    Clear
-                                </button>
+                                <div className="mt-4 flex flex-wrap items-center gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateCoverLetter}
+                                        disabled={coverLetterLoading}
+                                        className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {coverLetterLoading
+                                            ? "Generating..."
+                                            : "Regenerate"}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCoverLetter(null);
+                                            setCopied(false);
+                                            setCoverLetterError("");
+                                        }}
+                                        className="text-sm text-slate-500 transition hover:text-white"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </section>
