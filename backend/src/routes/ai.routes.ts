@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { analyzeJob, getAIAnalyses, analyzeResumeController, getResumeAnalyses, getJobRecommendations, generateCoverLetterController } from "../controllers/ai.controller.js";
+import { analyzeJob, getAIAnalyses, analyzeResumeController, getResumeAnalyses, getJobRecommendations, generateCoverLetterController, getCoverLetters } from "../controllers/ai.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -36,5 +36,11 @@ router.get(
 );
 
 router.post( "/cover-letter", authMiddleware, generateCoverLetterController );
+
+router.get(
+  "/cover-letters",
+  authMiddleware,
+  getCoverLetters
+);
 
 export default router;

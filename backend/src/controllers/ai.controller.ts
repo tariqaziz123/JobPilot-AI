@@ -540,3 +540,52 @@ ${user.resumeText ?? "Not provided"}
     });
   }
 };
+
+export const getCoverLetters = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const coverLetters = await prisma.coverLetter.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            company: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: coverLetters,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to fetch cover letters:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch cover letters",
+    });
+  }
+};
