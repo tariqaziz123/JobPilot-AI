@@ -66,6 +66,7 @@ type JobRecommendation = {
         company: string;
         description: string | null;
     };
+    priority: "HIGH" | "MEDIUM" | "LOW";
 };
 
 type CoverLetter = {
@@ -214,6 +215,22 @@ function AIToolsContent() {
             setRecommendationsLoading(false);
         }
     }
+
+    const sortedRecommendations = [...recommendations].sort(
+        (a, b) => {
+            const priority = {
+                HIGH: 3,
+                MEDIUM: 2,
+                LOW: 1,
+            };
+
+            return (
+                priority[b.priority] -
+                priority[a.priority] ||
+                b.matchScore - a.matchScore
+            );
+        }
+    );
 
     async function handleAnalyze() {
         const token = getToken();
@@ -1048,7 +1065,7 @@ function AIToolsContent() {
                         {!recommendationsLoading &&
                             recommendations.length > 0 && (
                                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
-                                    {recommendations.map((recommendation) => (
+                                    {sortedRecommendations.map((recommendation) => (
                                         <div
                                             key={recommendation.jobId}
                                             className="rounded-xl border border-slate-800 bg-slate-950 p-6"
@@ -1062,6 +1079,18 @@ function AIToolsContent() {
                                                     <p className="mt-1 text-sm text-slate-400">
                                                         {recommendation.job.company}
                                                     </p>
+                                                    <div className="mt-3">
+                                                        <span
+                                                            className={`rounded-full px-3 py-1 text-xs font-medium ${recommendation.priority === "HIGH"
+                                                                ? "bg-emerald-950 text-emerald-400"
+                                                                : recommendation.priority === "MEDIUM"
+                                                                    ? "bg-amber-950 text-amber-400"
+                                                                    : "bg-slate-800 text-slate-400"
+                                                                }`}
+                                                        >
+                                                            {recommendation.priority} PRIORITY
+                                                        </span>
+                                                    </div>
                                                 </div>
 
                                                 <div className="rounded-lg bg-purple-950/50 px-3 py-2 text-center">
