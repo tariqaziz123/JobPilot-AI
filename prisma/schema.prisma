@@ -12,26 +12,27 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  password  String?
-  skills    String[]
+  id         String   @id @default(cuid())
+  name       String?
+  email      String   @unique
+  password   String?
+  skills     String[]
   resumeText String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  jobs           Job[]
-  applications   Application[]
-  coverLetters CoverLetter[]
-  aiAnalyses     AIAnalysis[]
-  resumeAnalyses ResumeAnalysis[]
+  jobs                  Job[]
+  applications          Application[]
+  coverLetters          CoverLetter[]
+  aiAnalyses            AIAnalysis[]
+  resumeAnalyses        ResumeAnalysis[]
+  interviewPreparations InterviewPreparation[]
 }
 
 model Job {
-  id          String   @id @default(cuid())
-  userId      String
+  id     String @id @default(cuid())
+  userId String
 
   company     String
   title       String
@@ -41,23 +42,24 @@ model Job {
   salary      String?
   source      String?
 
-  status      String   @default("SAVED")
+  status String @default("SAVED")
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  applications Application[]
-  aiAnalyses   AIAnalysis[]
-  coverLetters CoverLetter[]
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications          Application[]
+  aiAnalyses            AIAnalysis[]
+  coverLetters          CoverLetter[]
+  interviewPreparations InterviewPreparation[]
 
   @@index([userId])
 }
 
 model Application {
-  id        String   @id @default(cuid())
-  userId    String
-  jobId     String
+  id     String @id @default(cuid())
+  userId String
+  jobId  String
 
   status    String   @default("APPLIED")
   appliedAt DateTime @default(now())
@@ -74,9 +76,9 @@ model Application {
 }
 
 model AIAnalysis {
-  id        String   @id @default(cuid())
-  userId    String
-  jobId     String
+  id     String @id @default(cuid())
+  userId String
+  jobId  String
 
   matchScore     Int?
   atsScore       Int?
@@ -94,8 +96,8 @@ model AIAnalysis {
 }
 
 model ResumeAnalysis {
-  id                String   @id @default(cuid())
-  userId            String
+  id     String @id @default(cuid())
+  userId String
 
   resumeScore       Int?
   atsScore          Int?
@@ -105,7 +107,7 @@ model ResumeAnalysis {
   improvements      Json?
   recommendedSkills Json?
 
-  createdAt         DateTime @default(now())
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -113,14 +115,31 @@ model ResumeAnalysis {
 }
 
 model CoverLetter {
-  id        String   @id @default(cuid())
-  userId    String
-  jobId     String
+  id     String @id @default(cuid())
+  userId String
+  jobId  String
 
-  content   String
+  content String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([jobId])
+}
+
+model InterviewPreparation {
+  id     String @id @default(cuid())
+  userId String
+  jobId  String
+
+  questions       Json
+  preparationTips Json
+
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
