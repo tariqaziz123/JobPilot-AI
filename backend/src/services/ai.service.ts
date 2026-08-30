@@ -443,42 +443,79 @@ export async function generateInterviewPreparation(
   const prompt = `
 You are an expert technical recruiter and interview coach.
 
-Create an interview preparation plan for the candidate applying
-to the job below.
+Generate useful interview questions and complete, ready-to-speak answers based ONLY on the candidate's actual experience and the provided job description.
 
 CANDIDATE PROFILE:
 ${candidateProfile}
 
-JOB:
-Company: ${job.company}
-Title: ${job.title}
-
 JOB DESCRIPTION:
-${job.description ?? "No description provided"}
-
-Generate useful interview questions based only on the candidate's
-actual experience and the job description.
+${job.description}
 
 Requirements:
 
-- Generate 10 interview questions.
-- Include technical questions.
-- Include behavioral questions.
-- Include job-specific questions.
+- Generate exactly 20 interview questions.
+- Include a balanced mix of:
+  - Technical questions
+  - Behavioral questions
+  - Job-specific questions
+- Include coding questions when the job description indicates that coding, programming, algorithms, problem solving, or technical implementation is relevant to the role.
+- Do not generate coding questions if coding/programming is clearly not relevant to the role.
+- Questions must be realistic questions an interviewer could actually ask.
+- Questions must be relevant to both the candidate's background and the job description.
 - Do not invent candidate experience.
-- Questions should be relevant to the job.
-- suggestedAnswer should provide a concise answer framework
-  based on the candidate's actual profile.
-- Do not claim the candidate has experience that is not present.
-- difficulty must be EASY, MEDIUM, or HARD.
-- category must be TECHNICAL, BEHAVIORAL, or JOB_SPECIFIC.
-- Generate 5 practical preparation tips.
+- Do not assume the candidate used a technology, tool, methodology, responsibility, project, or achievement unless it is present in the candidate profile.
+- If the job description mentions a technology that is not present in the candidate profile, you may ask about the candidate's understanding or approach to that technology, but do not claim the candidate has professional experience with it.
+
+For every question:
+
+- suggestedAnswer must be a complete, ready-to-speak interview answer.
+- Write the suggestedAnswer in first person, as if the candidate is directly answering the interviewer.
+- The candidate should be able to read the suggestedAnswer and say it naturally during an interview.
+- Do not tell the candidate how to answer.
+- Do not provide coaching instructions.
+- Do not use phrases such as:
+  - "You should mention..."
+  - "You should explain..."
+  - "You can say..."
+  - "Highlight..."
+  - "Frame your answer..."
+  - "Make sure to..."
+  - "Mention that..."
+  - "Talk about..."
+- Do not provide an answer framework.
+- Do not provide bullet-point coaching notes inside suggestedAnswer.
+- Do not describe what the candidate should discuss.
+- Instead, directly provide the answer the candidate could speak.
+- Use natural first-person language such as "In my previous role...", "I worked on...", "I used...", "My approach would be..."
+- Keep each suggestedAnswer concise and conversational, ideally 80-150 words.
+- Answers must be truthful and strictly grounded in the candidate profile.
+- Do not invent tools, technologies, responsibilities, projects, achievements, metrics, employers, or experience.
+- When a question is about a technology or responsibility the candidate has not explicitly worked with, answer honestly based on the candidate's existing knowledge or closely related experience without falsely claiming professional experience.
+- For hypothetical or job-specific questions, use phrases such as "My approach would be..." when appropriate.
+- Coding questions should test practical problem-solving relevant to the role. The suggestedAnswer should provide a concise explanation of how the candidate would approach the problem. Do not invent previous experience solving that exact problem.
+- Avoid repetitive questions.
+- Vary the difficulty across EASY, MEDIUM, and HARD where appropriate.
+- difficulty must be exactly one of: EASY, MEDIUM, HARD.
+- category must be exactly one of: TECHNICAL, BEHAVIORAL, JOB_SPECIFIC.
+
+Preparation tips:
+
+- Generate exactly 5 practical preparation tips.
+- Tips must be specific to the candidate profile and job description.
+- Tips should help the candidate prepare for the actual interview.
+- Do not write generic motivational advice.
+- Do not tell the candidate to invent or exaggerate experience.
+- Do not include answer templates or coaching notes in the tips.
+
+Output requirements:
+
 - Return ONLY valid JSON.
 - Do not use markdown.
 - Do not use code fences.
-- Do not include explanations outside JSON.
-
-Return exactly this structure:
+- Do not include explanations outside the JSON.
+- Use double quotes for all JSON strings.
+- Properly escape quotation marks and special characters inside strings.
+- Return exactly this structure:
 
 {
   "questions": [
@@ -492,8 +529,7 @@ Return exactly this structure:
   "preparationTips": [
     "string"
   ]
-}
-`;
+}`
 
   const response = await generateAIResponse(prompt);
 

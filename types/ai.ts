@@ -28,9 +28,11 @@ export type CoverLetterResult = {
   content: string;
 };
 
-export type InterviewQuestion = {
+type InterviewQuestion = {
   question: string;
-  answer: string;
+  category: "TECHNICAL" | "BEHAVIORAL" | "JOB_SPECIFIC";
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  suggestedAnswer: string;
 };
 
 export type InterviewPreparation = {

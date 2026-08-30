@@ -4,8 +4,9 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter, getCoverLetters } from "@/lib/api";
+import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter, getCoverLetters, generateInterviewPreparation } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { InterviewPreparation } from "@/types/ai";
 
 type Job = {
     id: string;
@@ -124,6 +125,14 @@ function AIToolsContent() {
     const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
     const [selectedCoverLetter, setSelectedCoverLetter] =
         useState<CoverLetter | null>(null);
+    const [interviewPreparation, setInterviewPreparation] =
+        useState<InterviewPreparation | null>(null);
+
+    const [interviewLoading, setInterviewLoading] =
+        useState(false);
+
+    const [interviewError, setInterviewError] =
+        useState("");
     const router = useRouter();
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
@@ -343,6 +352,40 @@ function AIToolsContent() {
         }
     }
 
+    async function handleGenerateInterviewPreparation() {
+        const token = getToken();
+
+        if (!token) {
+            window.location.href = "/login";
+            return;
+        }
+
+        if (!selectedJobId) {
+            setInterviewError("Please select a job first.");
+            return;
+        }
+
+        setInterviewLoading(true);
+        setInterviewError("");
+        setInterviewPreparation(null);
+
+        try {
+            const result = await generateInterviewPreparation(
+                token,
+                selectedJobId
+            );
+
+            setInterviewPreparation(result.data);
+        } catch (error) {
+            setInterviewError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to generate interview preparation"
+            );
+        } finally {
+            setInterviewLoading(false);
+        }
+    }
     return (
         <DashboardLayout>
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -996,6 +1039,163 @@ function AIToolsContent() {
                                 className="mt-5 rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-500"
                             >
                                 Copy Cover Letter
+                            </button>
+                        </section>
+                    )}
+                    <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                        <div>
+                            <p className="text-sm font-medium text-purple-400">
+                                AI Interview Coach
+                            </p>
+
+                            <h2 className="mt-2 text-2xl font-bold text-white">
+                                Interview Preparation
+                            </h2>
+
+                            <p className="mt-2 text-sm text-slate-400">
+                                Generate technical, behavioral, and job-specific interview
+                                questions based on your profile and the selected job.
+                            </p>
+                        </div>
+
+                        <div className="mt-6">
+                            <label
+                                htmlFor="interview-job"
+                                className="block text-sm font-medium text-slate-300"
+                            >
+                                Select Job
+                            </label>
+
+                            <select
+                                id="interview-job"
+                                value={selectedJobId}
+                                onChange={(event) => {
+                                    setSelectedJobId(event.target.value);
+                                    setInterviewPreparation(null);
+                                    setInterviewError("");
+                                }}
+                                className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-purple-500"
+                            >
+                                <option value="">
+                                    Select a job...
+                                </option>
+
+                                {jobs.map((job) => (
+                                    <option
+                                        key={job.id}
+                                        value={job.id}
+                                    >
+                                        {job.title} — {job.company}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGenerateInterviewPreparation}
+                            disabled={!selectedJobId || interviewLoading}
+                            className="mt-6 rounded-lg bg-purple-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {interviewLoading
+                                ? "Preparing Interview..."
+                                : "Generate Interview Preparation"}
+                        </button>
+
+                        {interviewError && (
+                            <div className="mt-6 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-400">
+                                {interviewError}
+                            </div>
+                        )}
+
+                        {interviewLoading && (
+                            <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-6">
+                                <p className="text-sm text-slate-400">
+                                    Creating personalized interview questions...
+                                </p>
+                            </div>
+                        )}
+                    </section>
+                    {interviewPreparation && (
+                        <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                            <div>
+                                <p className="text-sm font-medium text-purple-400">
+                                    Interview Plan
+                                </p>
+
+                                <h2 className="mt-2 text-2xl font-bold text-white">
+                                    Your Interview Preparation
+                                </h2>
+
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Generated{" "}
+                                    {new Date(
+                                        interviewPreparation.createdAt
+                                    ).toLocaleString()}
+                                </p>
+                            </div>
+
+                            <div className="mt-6 space-y-4">
+                                {interviewPreparation.questions.map(
+                                    (question, index) => (
+                                        <div
+                                            key={`${question.question}-${index}`}
+                                            className="rounded-xl border border-slate-800 bg-slate-950 p-5"
+                                        >
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="rounded-full border border-blue-800 bg-blue-950/40 px-3 py-1 text-xs text-blue-400">
+                                                    {question.category.replace("_", " ")}
+                                                </span>
+
+                                                <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
+                                                    {question.difficulty}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="mt-4 font-semibold text-white">
+                                                {index + 1}. {question.question}
+                                            </h3>
+
+                                            <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
+                                                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                                    Suggested Answer
+                                                </p>
+
+                                                <p className="mt-2 text-sm leading-6 text-slate-300">
+                                                    {question.suggestedAnswer}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+
+                            <div className="mt-8 rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                <h3 className="text-lg font-semibold text-white">
+                                    Preparation Tips
+                                </h3>
+
+                                <ul className="mt-4 space-y-3">
+                                    {interviewPreparation.preparationTips.map(
+                                        (tip, index) => (
+                                            <li
+                                                key={`${tip}-${index}`}
+                                                className="text-sm leading-6 text-slate-300"
+                                            >
+                                                → {tip}
+                                            </li>
+                                        )
+                                    )}
+                                </ul>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleGenerateInterviewPreparation}
+                                disabled={interviewLoading}
+                                className="mt-6 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
+                            >
+                                Regenerate
                             </button>
                         </section>
                     )}
