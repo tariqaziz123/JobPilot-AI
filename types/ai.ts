@@ -27,3 +27,16 @@ export type JobRecommendation = {
 export type CoverLetterResult = {
   content: string;
 };
+
+export type InterviewQuestion = {
+  question: string;
+  answer: string;
+};
+
+export type InterviewPreparation = {
+  id: string;
+  jobId: string;
+  questions: InterviewQuestion[];
+  preparationTips: string[];
+  createdAt: string;
+};

@@ -561,3 +561,33 @@ export async function getCoverLetters(
 
   return result;
 }
+
+export async function generateInterviewPreparation(
+  token: string,
+  jobId: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/interview-preparation`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        jobId,
+      }),
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message ||
+        "Failed to generate interview preparation"
+    );
+  }
+
+  return result;
+}
