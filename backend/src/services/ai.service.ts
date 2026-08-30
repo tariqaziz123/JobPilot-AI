@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 import { env } from "../config/env.js";
 
-import { JobAnalysisResult, ResumeAnalysisResult, JobRecommendation, CoverLetterResult } from "../types/ai.js"
+import { JobAnalysisResult, ResumeAnalysisResult, JobRecommendation, CoverLetterResult, InterviewPreparationResult } from "../types/ai.js"
 
 const ai = new GoogleGenAI({
   apiKey: env.geminiApiKey,
@@ -424,6 +424,133 @@ Return exactly this structure:
 
     throw new Error(
       `Gemini returned invalid cover letter JSON: ${
+        error instanceof Error
+          ? error.message
+          : "Unknown error"
+      }`
+    );
+  }
+}
+
+export async function generateInterviewPreparation(
+  candidateProfile: string,
+  job: {
+    title: string;
+    company: string;
+    description: string | null;
+  }
+): Promise<InterviewPreparationResult> {
+  const prompt = `
+You are an expert technical recruiter and interview coach.
+
+Create an interview preparation plan for the candidate applying
+to the job below.
+
+CANDIDATE PROFILE:
+${candidateProfile}
+
+JOB:
+Company: ${job.company}
+Title: ${job.title}
+
+JOB DESCRIPTION:
+${job.description ?? "No description provided"}
+
+Generate useful interview questions based only on the candidate's
+actual experience and the job description.
+
+Requirements:
+
+- Generate 10 interview questions.
+- Include technical questions.
+- Include behavioral questions.
+- Include job-specific questions.
+- Do not invent candidate experience.
+- Questions should be relevant to the job.
+- suggestedAnswer should provide a concise answer framework
+  based on the candidate's actual profile.
+- Do not claim the candidate has experience that is not present.
+- difficulty must be EASY, MEDIUM, or HARD.
+- category must be TECHNICAL, BEHAVIORAL, or JOB_SPECIFIC.
+- Generate 5 practical preparation tips.
+- Return ONLY valid JSON.
+- Do not use markdown.
+- Do not use code fences.
+- Do not include explanations outside JSON.
+
+Return exactly this structure:
+
+{
+  "questions": [
+    {
+      "question": "string",
+      "category": "TECHNICAL",
+      "difficulty": "MEDIUM",
+      "suggestedAnswer": "string"
+    }
+  ],
+  "preparationTips": [
+    "string"
+  ]
+}
+`;
+
+  const response = await generateAIResponse(prompt);
+
+  try {
+    const parsed =
+      parseAIJson<InterviewPreparationResult>(response);
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.questions) ||
+      !Array.isArray(parsed.preparationTips)
+    ) {
+      throw new Error(
+        "Invalid interview preparation structure"
+      );
+    }
+
+    for (const question of parsed.questions) {
+      if (
+        typeof question.question !== "string" ||
+        ![
+          "TECHNICAL",
+          "BEHAVIORAL",
+          "JOB_SPECIFIC",
+        ].includes(question.category) ||
+        ![
+          "EASY",
+          "MEDIUM",
+          "HARD",
+        ].includes(question.difficulty) ||
+        typeof question.suggestedAnswer !== "string"
+      ) {
+        throw new Error(
+          "Invalid interview question structure"
+        );
+      }
+    }
+
+    if (
+      !parsed.preparationTips.every(
+        (tip) => typeof tip === "string"
+      )
+    ) {
+      throw new Error(
+        "Invalid preparation tips structure"
+      );
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error(
+      "Failed to parse interview preparation AI response:",
+      response
+    );
+
+    throw new Error(
+      `Gemini returned invalid interview preparation JSON: ${
         error instanceof Error
           ? error.message
           : "Unknown error"

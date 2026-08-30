@@ -28,3 +28,21 @@ export type JobRecommendation = {
 export type CoverLetterResult = {
   content: string;
 };
+
+export type InterviewQuestion = {
+  question: string;
+  category:
+    | "TECHNICAL"
+    | "BEHAVIORAL"
+    | "JOB_SPECIFIC";
+  difficulty:
+    | "EASY"
+    | "MEDIUM"
+    | "HARD";
+  suggestedAnswer: string;
+};
+
+export type InterviewPreparationResult = {
+  questions: InterviewQuestion[];
+  preparationTips: string[];
+};
