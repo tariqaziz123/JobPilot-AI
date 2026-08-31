@@ -440,6 +440,7 @@ export async function generateInterviewPreparation(
     description: string | null;
   }
 ): Promise<InterviewPreparationResult> {
+  
   const prompt = `
 You are an expert technical recruiter and interview coach.
 
