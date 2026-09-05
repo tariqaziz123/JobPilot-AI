@@ -133,6 +133,8 @@ function AIToolsContent() {
 
     const [interviewError, setInterviewError] =
         useState("");
+    const [expandedQuestion, setExpandedQuestion] =
+        useState<number | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
@@ -368,6 +370,7 @@ function AIToolsContent() {
         setInterviewLoading(true);
         setInterviewError("");
         setInterviewPreparation(null);
+        setExpandedQuestion(null);
 
         try {
             const result = await generateInterviewPreparation(
@@ -1073,6 +1076,7 @@ function AIToolsContent() {
                                     setSelectedJobId(event.target.value);
                                     setInterviewPreparation(null);
                                     setInterviewError("");
+                                    setExpandedQuestion(null);
                                 }}
                                 className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-purple-500"
                             >
@@ -1118,85 +1122,203 @@ function AIToolsContent() {
                     </section>
                     {interviewPreparation && (
                         <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
-                            <div>
-                                <p className="text-sm font-medium text-purple-400">
-                                    Interview Plan
-                                </p>
+                            {(() => {
+                                const selectedJob = jobs.find(
+                                    (job) => job.id === selectedJobId
+                                );
 
-                                <h2 className="mt-2 text-2xl font-bold text-white">
-                                    Your Interview Preparation
-                                </h2>
-
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Generated{" "}
-                                    {new Date(
-                                        interviewPreparation.createdAt
-                                    ).toLocaleString()}
-                                </p>
-                            </div>
-
-                            <div className="mt-6 space-y-4">
-                                {interviewPreparation.questions.map(
-                                    (question, index) => (
-                                        <div
-                                            key={`${question.question}-${index}`}
-                                            className="rounded-xl border border-slate-800 bg-slate-950 p-5"
-                                        >
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="rounded-full border border-blue-800 bg-blue-950/40 px-3 py-1 text-xs text-blue-400">
-                                                    {question.category.replace("_", " ")}
-                                                </span>
-
-                                                <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
-                                                    {question.difficulty}
-                                                </span>
-                                            </div>
-
-                                            <h3 className="mt-4 font-semibold text-white">
-                                                {index + 1}. {question.question}
-                                            </h3>
-
-                                            <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
-                                                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                                                    Suggested Answer
+                                return (
+                                    <>
+                                        {/* Header */}
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-purple-400">
+                                                    AI Interview Coach
                                                 </p>
 
-                                                <p className="mt-2 text-sm leading-6 text-slate-300">
-                                                    {question.suggestedAnswer}
+                                                <h2 className="mt-2 text-2xl font-bold text-white">
+                                                    Interview Preparation
+                                                </h2>
+
+                                                {selectedJob && (
+                                                    <div className="mt-2">
+                                                        <p className="text-sm font-medium text-white">
+                                                            {selectedJob.title}
+                                                        </p>
+
+                                                        <p className="mt-1 text-sm text-slate-400">
+                                                            {selectedJob.company}
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                <p className="mt-2 text-xs text-slate-500">
+                                                    Generated{" "}
+                                                    {new Date(
+                                                        interviewPreparation.createdAt
+                                                    ).toLocaleString()}
+                                                </p>
+                                            </div>
+
+                                            <div className="rounded-xl border border-purple-800 bg-purple-950/40 px-5 py-3 text-center">
+                                                <p className="text-2xl font-bold text-purple-400">
+                                                    {interviewPreparation.questions.length}
+                                                </p>
+
+                                                <p className="text-xs text-slate-400">
+                                                    Questions
                                                 </p>
                                             </div>
                                         </div>
-                                    )
-                                )}
-                            </div>
 
-                            <div className="mt-8 rounded-xl border border-slate-800 bg-slate-950 p-5">
-                                <h3 className="text-lg font-semibold text-white">
-                                    Preparation Tips
-                                </h3>
+                                        {/* Questions */}
+                                        <div className="mt-8">
+                                            <div className="mb-4">
+                                                <h3 className="text-lg font-semibold text-white">
+                                                    Interview Questions
+                                                </h3>
 
-                                <ul className="mt-4 space-y-3">
-                                    {interviewPreparation.preparationTips.map(
-                                        (tip, index) => (
-                                            <li
-                                                key={`${tip}-${index}`}
-                                                className="text-sm leading-6 text-slate-300"
+                                                <p className="mt-1 text-sm text-slate-400">
+                                                    Practice these questions using the ready-to-speak
+                                                    answers provided by the AI.
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {interviewPreparation.questions.map(
+                                                    (question, index) => {
+                                                        const isExpanded =
+                                                            expandedQuestion === index;
+
+                                                        return (
+                                                            <div
+                                                                key={`${question.question}-${index}`}
+                                                                className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+                                                            >
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setExpandedQuestion(
+                                                                            isExpanded
+                                                                                ? null
+                                                                                : index
+                                                                        )
+                                                                    }
+                                                                    className="w-full p-5 text-left transition hover:bg-slate-900"
+                                                                >
+                                                                    <div className="flex items-start justify-between gap-4">
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                                <span className="rounded-full border border-blue-800 bg-blue-950/40 px-3 py-1 text-xs font-medium text-blue-400">
+                                                                                    {question.category.replace(
+                                                                                        "_",
+                                                                                        " "
+                                                                                    )}
+                                                                                </span>
+
+                                                                                <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
+                                                                                    {question.difficulty}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <h4 className="mt-4 font-semibold leading-6 text-white">
+                                                                                <span className="mr-2 text-purple-400">
+                                                                                    {index + 1}.
+                                                                                </span>
+                                                                                {question.question}
+                                                                            </h4>
+                                                                        </div>
+
+                                                                        <span className="mt-1 shrink-0 text-slate-400">
+                                                                            {isExpanded
+                                                                                ? "▲"
+                                                                                : "▼"}
+                                                                        </span>
+                                                                    </div>
+                                                                </button>
+
+                                                                {isExpanded && (
+                                                                    <div className="border-t border-slate-800 px-5 pb-5">
+                                                                        <div className="mt-5 rounded-xl border border-purple-900/60 bg-purple-950/20 p-5">
+                                                                            <p className="text-xs font-semibold uppercase tracking-wide text-purple-400">
+                                                                                Ready-to-Speak Answer
+                                                                            </p>
+
+                                                                            <p className="mt-3 text-sm leading-7 text-slate-300">
+                                                                                {question.suggestedAnswer}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Preparation Tips */}
+                                        <div className="mt-8 rounded-xl border border-slate-800 bg-slate-950 p-5">
+                                            <div>
+                                                <p className="text-sm font-medium text-purple-400">
+                                                    Final Preparation
+                                                </p>
+
+                                                <h3 className="mt-1 text-lg font-semibold text-white">
+                                                    Preparation Tips
+                                                </h3>
+
+                                                <p className="mt-1 text-sm text-slate-400">
+                                                    Focus on these areas before the interview.
+                                                </p>
+                                            </div>
+
+                                            <div className="mt-5 space-y-3">
+                                                {interviewPreparation.preparationTips.map(
+                                                    (tip, index) => (
+                                                        <div
+                                                            key={`${tip}-${index}`}
+                                                            className="flex gap-3 rounded-lg border border-slate-800 bg-slate-900 p-4"
+                                                        >
+                                                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-950 text-xs font-semibold text-purple-400">
+                                                                {index + 1}
+                                                            </span>
+
+                                                            <p className="text-sm leading-6 text-slate-300">
+                                                                {tip}
+                                                            </p>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="mt-6 flex flex-wrap gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={handleGenerateInterviewPreparation}
+                                                disabled={interviewLoading}
+                                                className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
-                                                → {tip}
-                                            </li>
-                                        )
-                                    )}
-                                </ul>
-                            </div>
+                                                {interviewLoading
+                                                    ? "Generating..."
+                                                    : "Regenerate Preparation"}
+                                            </button>
 
-                            <button
-                                type="button"
-                                onClick={handleGenerateInterviewPreparation}
-                                disabled={interviewLoading}
-                                className="mt-6 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
-                            >
-                                Regenerate
-                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setExpandedQuestion(null)
+                                                }
+                                                className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white"
+                                            >
+                                                Collapse Answers
+                                            </button>
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </section>
                     )}
                     <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
