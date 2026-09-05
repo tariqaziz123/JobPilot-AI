@@ -726,3 +726,54 @@ ${user.resumeText ?? "Not provided"}
     });
   }
 };
+
+export const getInterviewPreparations = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const preparations =
+      await prisma.interviewPreparation.findMany({
+        where: {
+          userId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          job: {
+            select: {
+              id: true,
+              title: true,
+              company: true,
+            },
+          },
+        },
+      });
+
+    return res.status(200).json({
+      success: true,
+      data: preparations,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to fetch interview preparations:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch interview preparations",
+    });
+  }
+};
