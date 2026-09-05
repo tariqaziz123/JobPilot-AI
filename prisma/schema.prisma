@@ -132,18 +132,17 @@ model CoverLetter {
 }
 
 model InterviewPreparation {
-  id     String @id @default(cuid())
-  userId String
-  jobId  String
-
-  questions       Json
-  preparationTips Json
-
-  createdAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  userId           String
+  jobId            String
+  questions        Json
+  preparationTips  Json
+  createdAt        DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([jobId])
+  @@index([createdAt])
 }
