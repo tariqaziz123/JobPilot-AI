@@ -591,3 +591,28 @@ export async function generateInterviewPreparation(
 
   return result;
 }
+
+export async function getInterviewPreparations(
+  token: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/interview-preparation`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message ||
+        "Failed to fetch interview preparations"
+    );
+  }
+
+  return result;
+}

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter, getCoverLetters, generateInterviewPreparation } from "@/lib/api";
+import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter, getCoverLetters, generateInterviewPreparation, getInterviewPreparations } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { InterviewPreparation } from "@/types/ai";
 
@@ -82,6 +82,16 @@ type CoverLetter = {
     };
 };
 
+type InterviewPreparationHistoryItem = InterviewPreparation & {
+    id: string;
+    jobId: string;
+    job: {
+        id: string;
+        title: string;
+        company: string;
+    };
+};
+
 
 function AIToolsContent() {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -135,6 +145,14 @@ function AIToolsContent() {
         useState("");
     const [expandedQuestion, setExpandedQuestion] =
         useState<number | null>(null);
+    const [interviewHistory, setInterviewHistory] =
+        useState<InterviewPreparationHistoryItem[]>([]);
+
+    const [historyLoading, setHistoryLoading] =
+        useState(false);
+
+    const [historyError, setHistoryError] =
+        useState("");
     const router = useRouter();
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
@@ -200,6 +218,38 @@ function AIToolsContent() {
             setError("");
         }
     }, [jobIdFromUrl, jobs]);
+
+        useEffect(() => {
+        async function loadHistory() {
+            const token = getToken();
+
+            if (!token) {
+                return;
+            }
+
+            setHistoryLoading(true);
+            setHistoryError("");
+
+            try {
+                const result =
+                    await getInterviewPreparations(token);
+
+                setInterviewHistory(
+                    result.data ?? []
+                );
+            } catch (error) {
+                setHistoryError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load interview preparation history"
+                );
+            } finally {
+                setHistoryLoading(false);
+            }
+        }
+
+        loadHistory();
+    }, []);
 
     async function loadRecommendations() {
         const token = getToken();
@@ -379,6 +429,11 @@ function AIToolsContent() {
             );
 
             setInterviewPreparation(result.data);
+            const historyResult =
+                await getInterviewPreparations(token);
+
+            setInterviewHistory(
+                historyResult.data ?? [])
         } catch (error) {
             setInterviewError(
                 error instanceof Error
@@ -389,6 +444,24 @@ function AIToolsContent() {
             setInterviewLoading(false);
         }
     }
+
+    function openInterviewPreparation(
+        preparation: InterviewPreparationHistoryItem
+    ) {
+        setSelectedJobId(preparation.jobId);
+        setInterviewPreparation({
+            questions: preparation.questions,
+            preparationTips: preparation.preparationTips,
+            createdAt: preparation.createdAt,
+        });
+        setExpandedQuestion(null);
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+
     return (
         <DashboardLayout>
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -1321,6 +1394,117 @@ function AIToolsContent() {
                             })()}
                         </section>
                     )}
+                    <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-blue-400">
+                                    Saved Preparations
+                                </p>
+
+                                <h2 className="mt-1 text-xl font-bold text-white">
+                                    Interview Preparation History
+                                </h2>
+
+                                <p className="mt-1 text-sm text-slate-400">
+                                    Open a previous preparation session and continue
+                                    practicing.
+                                </p>
+                            </div>
+
+                            <div className="rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-center">
+                                <p className="text-lg font-bold text-white">
+                                    {interviewHistory.length}
+                                </p>
+
+                                <p className="text-xs text-slate-500">
+                                    Sessions
+                                </p>
+                            </div>
+                        </div>
+
+                        {historyLoading && (
+                            <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-5">
+                                <p className="text-sm text-slate-400">
+                                    Loading preparation history...
+                                </p>
+                            </div>
+                        )}
+
+                        {historyError && (
+                            <div className="mt-6 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-400">
+                                {historyError}
+                            </div>
+                        )}
+
+                        {!historyLoading &&
+                            !historyError &&
+                            interviewHistory.length === 0 && (
+                                <div className="mt-6 rounded-xl border border-dashed border-slate-700 bg-slate-950 p-8 text-center">
+                                    <p className="text-sm font-medium text-slate-300">
+                                        No interview preparations yet
+                                    </p>
+
+                                    <p className="mt-2 text-sm text-slate-500">
+                                        Generate your first interview preparation
+                                        above and it will appear here.
+                                    </p>
+                                </div>
+                            )}
+
+                        {!historyLoading &&
+                            interviewHistory.length > 0 && (
+                                <div className="mt-6 space-y-3">
+                                    {interviewHistory.map((preparation) => (
+                                        <button
+                                            key={preparation.id}
+                                            type="button"
+                                            onClick={() =>
+                                                openInterviewPreparation(
+                                                    preparation
+                                                )
+                                            }
+                                            className="w-full rounded-xl border border-slate-800 bg-slate-950 p-5 text-left transition hover:border-purple-800 hover:bg-slate-900"
+                                        >
+                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                                <div className="min-w-0">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="rounded-full border border-purple-800 bg-purple-950/40 px-3 py-1 text-xs font-medium text-purple-400">
+                                                            Interview Preparation
+                                                        </span>
+
+                                                        <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
+                                                            {preparation.questions.length}{" "}
+                                                            Questions
+                                                        </span>
+                                                    </div>
+
+                                                    <h3 className="mt-3 truncate font-semibold text-white">
+                                                        {preparation.job.title}
+                                                    </h3>
+
+                                                    <p className="mt-1 text-sm text-slate-400">
+                                                        {preparation.job.company}
+                                                    </p>
+
+                                                    <p className="mt-2 text-xs text-slate-500">
+                                                        Generated{" "}
+                                                        {new Date(
+                                                            preparation.createdAt
+                                                        ).toLocaleString()}
+                                                    </p>
+                                                </div>
+
+                                                <div className="shrink-0">
+                                                    <span className="inline-flex items-center rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-purple-700 hover:text-white">
+                                                        Open Preparation →
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                    </section>
                     <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div>
