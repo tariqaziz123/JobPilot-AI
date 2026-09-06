@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { analyzeJob, getAIAnalyses, analyzeResumeController, getResumeAnalyses, getJobRecommendations, generateCoverLetterController, getCoverLetters, generateInterviewPreparationController, getInterviewPreparations } from "../controllers/ai.controller.js";
+import { analyzeJob, getAIAnalyses, analyzeResumeController, getResumeAnalyses, getJobRecommendations, generateCoverLetterController, getCoverLetters, generateInterviewPreparationController, getInterviewPreparations, startMockInterviewController, answerMockInterviewController } from "../controllers/ai.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -53,6 +53,18 @@ router.get(
   "/interview-preparation",
   authMiddleware,
   getInterviewPreparations
+);
+
+router.post(
+  "/mock-interview/start",
+  authMiddleware,
+  startMockInterviewController
+);
+
+router.post(
+  "/mock-interview/answer",
+  authMiddleware,
+  answerMockInterviewController
 );
 
 export default router;

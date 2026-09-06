@@ -2,7 +2,7 @@ import { Response } from "express";
 
 import { prisma } from "../config/prisma.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
-import { analyzeJobMatch, analyzeResume, recommendJobs, generateCoverLetter, generateInterviewPreparation } from "../services/ai.service.js";
+import { analyzeJobMatch, analyzeResume, recommendJobs, generateCoverLetter, generateInterviewPreparation, evaluateMockInterviewAnswer } from "../services/ai.service.js";
 
 export const analyzeJob = async (
   req: AuthRequest,
@@ -774,6 +774,357 @@ export const getInterviewPreparations = async (
       success: false,
       message:
         "Failed to fetch interview preparations",
+    });
+  }
+};
+
+
+export const startMockInterviewController = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { jobId } = req.body;
+
+    if (!jobId) {
+      return res.status(400).json({
+        success: false,
+        message: "jobId is required",
+      });
+    }
+
+    const job = await prisma.job.findFirst({
+      where: {
+        id: jobId,
+        userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        company: true,
+      },
+    });
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    const preparation =
+      await prisma.interviewPreparation.findFirst({
+        where: {
+          jobId: job.id,
+          userId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+    if (!preparation) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please generate Interview Preparation for this job first",
+      });
+    }
+
+    const questions = preparation.questions;
+
+    if (
+      !Array.isArray(questions) ||
+      questions.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No interview questions are available for this job",
+      });
+    }
+
+    const session =
+      await prisma.interviewSession.create({
+        data: {
+          userId,
+          jobId: job.id,
+          status: "IN_PROGRESS",
+          currentQuestion: 0,
+          totalQuestions: questions.length,
+        },
+      });
+
+    const firstQuestion = questions[0];
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        sessionId: session.id,
+        job: {
+          id: job.id,
+          title: job.title,
+          company: job.company,
+        },
+        questionIndex: 0,
+        totalQuestions: questions.length,
+        question: firstQuestion,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Failed to start mock interview:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to start mock interview",
+    });
+  }
+};
+
+export const answerMockInterviewController = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { sessionId, answer } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: "sessionId is required",
+      });
+    }
+
+    if (
+      typeof answer !== "string" ||
+      !answer.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Answer is required",
+      });
+    }
+
+    const session =
+      await prisma.interviewSession.findFirst({
+        where: {
+          id: sessionId,
+          userId,
+        },
+        include: {
+          job: {
+            select: {
+              id: true,
+              title: true,
+              company: true,
+              description: true,
+            },
+          },
+        },
+      });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Interview session not found",
+      });
+    }
+
+    if (session.status === "COMPLETED") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Interview session is already completed",
+      });
+    }
+
+    const preparation =
+      await prisma.interviewPreparation.findFirst({
+        where: {
+          jobId: session.jobId,
+          userId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+    if (!preparation) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Interview preparation not found",
+      });
+    }
+
+    const questions = preparation.questions;
+
+    if (
+      !Array.isArray(questions) ||
+      questions.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No interview questions are available",
+      });
+    }
+
+    const questionIndex =
+      session.currentQuestion;
+
+    const currentQuestion =
+      questions[questionIndex];
+
+    if (!currentQuestion) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Current interview question not found",
+      });
+    }
+
+    const evaluation =
+      await evaluateMockInterviewAnswer(
+        session.job,
+        currentQuestion,
+        answer.trim()
+      );
+
+    const savedAnswer =
+      await prisma.interviewAnswer.create({
+        data: {
+          sessionId: session.id,
+          questionIndex,
+          question:
+            typeof currentQuestion === "string"
+              ? currentQuestion
+              : JSON.stringify(
+                  currentQuestion
+                ),
+          candidateAnswer: answer.trim(),
+          score: evaluation.score,
+          strengths: evaluation.strengths,
+          weaknesses: evaluation.weaknesses,
+          feedback: evaluation.feedback,
+          improvedAnswer:
+            evaluation.improvedAnswer,
+        },
+      });
+
+    const nextQuestionIndex =
+      questionIndex + 1;
+
+    const completed =
+      nextQuestionIndex >= questions.length;
+
+    if (completed) {
+      const previousAnswers =
+        await prisma.interviewAnswer.findMany({
+          where: {
+            sessionId: session.id,
+          },
+          select: {
+            score: true,
+          },
+        });
+
+      const scores = [
+        ...previousAnswers.map(
+          (item) => item.score ?? 0
+        ),
+        evaluation.score,
+      ];
+
+      const finalScore = Math.round(
+        scores.reduce(
+          (total, score) => total + score,
+          0
+        ) / scores.length
+      );
+
+      await prisma.interviewSession.update({
+        where: {
+          id: session.id,
+        },
+        data: {
+          status: "COMPLETED",
+          currentQuestion: nextQuestionIndex,
+          finalScore,
+          completedAt: new Date(),
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          sessionId: session.id,
+          completed: true,
+          questionIndex,
+          totalQuestions:
+            questions.length,
+          evaluation,
+          answerId: savedAnswer.id,
+          finalScore,
+        },
+      });
+    }
+
+    await prisma.interviewSession.update({
+      where: {
+        id: session.id,
+      },
+      data: {
+        currentQuestion: nextQuestionIndex,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        sessionId: session.id,
+        completed: false,
+        questionIndex,
+        totalQuestions:
+          questions.length,
+        evaluation,
+        answerId: savedAnswer.id,
+        nextQuestionIndex,
+        nextQuestion:
+          questions[nextQuestionIndex],
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Failed to process mock interview answer:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to process mock interview answer",
     });
   }
 };

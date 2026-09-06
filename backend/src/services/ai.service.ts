@@ -4,6 +4,14 @@ import { env } from "../config/env.js";
 
 import { JobAnalysisResult, ResumeAnalysisResult, JobRecommendation, CoverLetterResult, InterviewPreparationResult } from "../types/ai.js"
 
+export interface MockInterviewEvaluation {
+  score: number;
+  strengths: string[];
+  weaknesses: string[];
+  feedback: string;
+  improvedAnswer: string;
+}
+
 const ai = new GoogleGenAI({
   apiKey: env.geminiApiKey,
 });
@@ -588,6 +596,151 @@ Output requirements:
 
     throw new Error(
       `Gemini returned invalid interview preparation JSON: ${
+        error instanceof Error
+          ? error.message
+          : "Unknown error"
+      }`
+    );
+  }
+}
+
+function validateMockInterviewEvaluation(
+  evaluation: MockInterviewEvaluation
+): MockInterviewEvaluation {
+  if (
+    !isScore(evaluation.score) ||
+    !isStringArray(evaluation.strengths) ||
+    !isStringArray(evaluation.weaknesses) ||
+    typeof evaluation.feedback !== "string" ||
+    typeof evaluation.improvedAnswer !== "string"
+  ) {
+    throw new Error(
+      "Invalid mock interview evaluation structure"
+    );
+  }
+
+  if (!evaluation.feedback.trim()) {
+    throw new Error(
+      "Mock interview feedback cannot be empty"
+    );
+  }
+
+  if (!evaluation.improvedAnswer.trim()) {
+    throw new Error(
+      "Mock interview improved answer cannot be empty"
+    );
+  }
+
+  return evaluation;
+}
+
+export async function evaluateMockInterviewAnswer(
+  job: {
+    title: string;
+    company: string;
+    description: string | null;
+  },
+  question: unknown,
+  candidateAnswer: string
+): Promise<MockInterviewEvaluation> {
+  const questionText =
+    typeof question === "string"
+      ? question
+      : JSON.stringify(question);
+
+  const prompt = `
+You are an expert technical interviewer and interview coach.
+
+Evaluate the candidate's answer to the interview question below.
+
+JOB:
+Company: ${job.company}
+Title: ${job.title}
+
+JOB DESCRIPTION:
+${job.description ?? "No description provided"}
+
+INTERVIEW QUESTION:
+${questionText}
+
+CANDIDATE ANSWER:
+${candidateAnswer}
+
+Evaluate the answer based on:
+
+- Technical correctness
+- Relevance to the question
+- Clarity
+- Completeness
+- Communication
+- Practical understanding
+- Alignment with the job requirements
+
+Important rules:
+
+- Do not invent experience for the candidate.
+- Do not assume the candidate has used a technology professionally unless the answer itself establishes that.
+- Evaluate the answer that was actually provided.
+- Be constructive and realistic.
+- Do not be excessively generous.
+- A score of 90-100 should represent an excellent interview-quality answer.
+- A score of 80-89 should represent a strong answer with minor improvements.
+- A score of 70-79 should represent a reasonably good answer with noticeable gaps.
+- A score of 60-69 should represent a partially correct answer with important gaps.
+- A score below 60 should represent a weak, incomplete, incorrect, or poorly communicated answer.
+- strengths should identify specific things the candidate did well.
+- weaknesses should identify specific areas that could be improved.
+- feedback should explain clearly why the answer received its score.
+- improvedAnswer should be a stronger, natural, ready-to-speak answer to the same question.
+- improvedAnswer must remain truthful and must not invent professional experience.
+- If the original answer is already strong, improve clarity and completeness rather than changing the candidate's claimed experience.
+- Use first-person language in improvedAnswer.
+- Keep improvedAnswer conversational and suitable for speaking during an interview.
+
+Return ONLY valid JSON.
+Do not use markdown.
+Do not use code fences.
+Do not include explanations outside the JSON.
+
+Return exactly this structure:
+
+{
+  "score": number,
+  "strengths": ["string"],
+  "weaknesses": ["string"],
+  "feedback": "string",
+  "improvedAnswer": "string"
+}
+
+Rules for JSON:
+
+- score must be a number between 0 and 100.
+- strengths must be a string array.
+- weaknesses must be a string array.
+- feedback must be a non-empty string.
+- improvedAnswer must be a non-empty string.
+`;
+
+  const response =
+    await generateAIResponse(prompt);
+
+  try {
+    const parsed =
+      parseAIJson<MockInterviewEvaluation>(
+        response
+      );
+
+    return validateMockInterviewEvaluation(
+      parsed
+    );
+  } catch (error) {
+    console.error(
+      "Failed to parse mock interview evaluation AI response:",
+      response
+    );
+
+    throw new Error(
+      `Gemini returned invalid mock interview evaluation JSON: ${
         error instanceof Error
           ? error.message
           : "Unknown error"
