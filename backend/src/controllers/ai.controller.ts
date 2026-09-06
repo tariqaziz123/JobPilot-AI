@@ -1021,8 +1021,8 @@ export const answerMockInterviewController = async (
             typeof currentQuestion === "string"
               ? currentQuestion
               : JSON.stringify(
-                  currentQuestion
-                ),
+                currentQuestion
+              ),
           candidateAnswer: answer.trim(),
           score: evaluation.score,
           strengths: evaluation.strengths,
@@ -1125,6 +1125,129 @@ export const answerMockInterviewController = async (
       success: false,
       message:
         "Failed to process mock interview answer",
+    });
+  }
+};
+
+export const getMockInterviewSessions = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const sessions =
+      await prisma.interviewSession.findMany({
+        where: {
+          userId,
+        },
+        orderBy: {
+          startedAt: "desc",
+        },
+        include: {
+          job: {
+            select: {
+              id: true,
+              title: true,
+              company: true,
+            },
+          },
+        },
+      });
+
+    return res.status(200).json({
+      success: true,
+      data: sessions,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to fetch mock interview sessions:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch mock interview sessions",
+    });
+  }
+};
+
+export const getMockInterviewSession = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+    const id = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Session ID is required",
+      });
+    }
+
+    const session =
+      await prisma.interviewSession.findFirst({
+        where: {
+          id,
+          userId,
+        },
+        include: {
+          job: {
+            select: {
+              id: true,
+              title: true,
+              company: true,
+            },
+          },
+          answers: {
+            orderBy: {
+              questionIndex: "asc",
+            },
+          },
+        },
+      });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Mock interview session not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: session,
+    });
+  } catch (error) {
+    console.error(
+      "Failed to fetch mock interview session:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch mock interview session",
     });
   }
 };

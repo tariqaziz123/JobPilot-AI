@@ -1,6 +1,20 @@
 import { Router } from "express";
 
-import { analyzeJob, getAIAnalyses, analyzeResumeController, getResumeAnalyses, getJobRecommendations, generateCoverLetterController, getCoverLetters, generateInterviewPreparationController, getInterviewPreparations, startMockInterviewController, answerMockInterviewController } from "../controllers/ai.controller.js";
+import {
+  analyzeJob,
+  getAIAnalyses, 
+  analyzeResumeController, 
+  getResumeAnalyses, 
+  getJobRecommendations, 
+  generateCoverLetterController, 
+  getCoverLetters, 
+  generateInterviewPreparationController, 
+  getInterviewPreparations, 
+  startMockInterviewController, 
+  answerMockInterviewController, 
+  getMockInterviewSessions,
+  getMockInterviewSession,
+} from "../controllers/ai.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -35,7 +49,7 @@ router.get(
   getJobRecommendations
 );
 
-router.post( "/cover-letter", authMiddleware, generateCoverLetterController );
+router.post("/cover-letter", authMiddleware, generateCoverLetterController);
 
 router.get(
   "/cover-letters",
@@ -65,6 +79,18 @@ router.post(
   "/mock-interview/answer",
   authMiddleware,
   answerMockInterviewController
+);
+
+router.get(
+  "/mock-interview",
+  authMiddleware,
+  getMockInterviewSessions
+);
+
+router.get(
+  "/mock-interview/:id",
+  authMiddleware,
+  getMockInterviewSession
 );
 
 export default router;
