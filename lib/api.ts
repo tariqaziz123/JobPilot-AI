@@ -616,3 +616,112 @@ export async function getInterviewPreparations(
 
   return result;
 }
+
+export async function startMockInterview(
+  token: string,
+  jobId: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/mock-interview/start`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ jobId }),
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to start mock interview"
+    );
+  }
+
+  return result;
+}
+
+export async function answerMockInterview(
+  token: string,
+  sessionId: string,
+  answer: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/mock-interview/answer`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        sessionId,
+        answer,
+      }),
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to submit interview answer"
+    );
+  }
+
+  return result;
+}
+
+export async function getMockInterviewSessions(
+  token: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/mock-interview`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message ||
+        "Failed to fetch mock interview sessions"
+    );
+  }
+
+  return result;
+}
+
+export async function getMockInterviewSession(
+  token: string,
+  sessionId: string
+) {
+  const response = await fetch(
+    `${API_URL}/api/ai/mock-interview/${sessionId}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message ||
+        "Failed to fetch mock interview session"
+    );
+  }
+
+  return result;
+}
