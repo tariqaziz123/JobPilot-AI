@@ -4,7 +4,22 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { analyzeJob, getJobs, getAIAnalyses, analyzeResume, getResumeAnalyses, getJobRecommendations, generateCoverLetter, getCoverLetters, generateInterviewPreparation, getInterviewPreparations } from "@/lib/api";
+import {
+    analyzeJob,
+    getJobs,
+    getAIAnalyses,
+    analyzeResume,
+    getResumeAnalyses,
+    getJobRecommendations,
+    generateCoverLetter,
+    getCoverLetters,
+    generateInterviewPreparation,
+    getInterviewPreparations,
+    startMockInterview,
+    answerMockInterview,
+    getMockInterviewSessions,
+    getMockInterviewSession,
+} from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { InterviewPreparation } from "@/types/ai";
 
@@ -92,6 +107,63 @@ type InterviewPreparationHistoryItem = InterviewPreparation & {
     };
 };
 
+type MockInterviewQuestion =
+    | string
+    | {
+        question?: string;
+        answer?: string;
+        type?: string;
+        difficulty?: string;
+        category?: string;
+    };
+
+type MockInterviewEvaluation = {
+    score: number;
+    strengths: string[];
+    weaknesses: string[];
+    feedback: string;
+    improvedAnswer: string;
+};
+
+type MockInterviewSession = {
+    sessionId: string;
+    job: {
+        id: string;
+        title: string;
+        company: string;
+    };
+    questionIndex: number;
+    totalQuestions: number;
+    question: MockInterviewQuestion;
+};
+
+type MockInterviewHistoryItem = {
+    id: string;
+    jobId: string;
+    status: string;
+    currentQuestion: number;
+    totalQuestions: number;
+    finalScore: number | null;
+    startedAt: string;
+    completedAt: string | null;
+    job: {
+        id: string;
+        title: string;
+        company: string;
+    };
+    answers: {
+        id: string;
+        questionIndex: number;
+        question: string;
+        candidateAnswer: string;
+        score: number | null;
+        strengths: string[] | null;
+        weaknesses: string[] | null;
+        feedback: string | null;
+        improvedAnswer: string | null;
+    }[];
+};
+
 
 function AIToolsContent() {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -156,6 +228,38 @@ function AIToolsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const jobIdFromUrl = searchParams.get("jobId");
+    const [mockInterview, setMockInterview] =
+        useState<MockInterviewSession | null>(null);
+
+    const [mockInterviewAnswer, setMockInterviewAnswer] =
+        useState("");
+
+    const [mockInterviewEvaluation, setMockInterviewEvaluation] =
+        useState<MockInterviewEvaluation | null>(null);
+
+    const [mockInterviewLoading, setMockInterviewLoading] =
+        useState(false);
+
+    const [mockInterviewSubmitting, setMockInterviewSubmitting] =
+        useState(false);
+
+    const [mockInterviewError, setMockInterviewError] =
+        useState("");
+
+    const [mockInterviewCompleted, setMockInterviewCompleted] =
+        useState(false);
+
+    const [mockInterviewFinalScore, setMockInterviewFinalScore] =
+        useState<number | null>(null);
+
+    const [mockInterviewHistory, setMockInterviewHistory] =
+        useState<MockInterviewHistoryItem[]>([]);
+
+    const [mockInterviewHistoryLoading, setMockInterviewHistoryLoading] =
+        useState(false);
+
+    const [selectedMockHistory, setSelectedMockHistory] =
+        useState<MockInterviewHistoryItem | null>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -219,7 +323,7 @@ function AIToolsContent() {
         }
     }, [jobIdFromUrl, jobs]);
 
-        useEffect(() => {
+    useEffect(() => {
         async function loadHistory() {
             const token = getToken();
 
@@ -446,25 +550,124 @@ function AIToolsContent() {
     }
 
     function openInterviewPreparation(
-    preparation: InterviewPreparationHistoryItem
-) {
-    setSelectedJobId(preparation.jobId);
+        preparation: InterviewPreparationHistoryItem
+    ) {
+        setSelectedJobId(preparation.jobId);
 
-    setInterviewPreparation({
-        id: preparation.id,
-        jobId: preparation.jobId,
-        questions: preparation.questions,
-        preparationTips: preparation.preparationTips,
-        createdAt: preparation.createdAt,
-    });
+        setInterviewPreparation({
+            id: preparation.id,
+            jobId: preparation.jobId,
+            questions: preparation.questions,
+            preparationTips: preparation.preparationTips,
+            createdAt: preparation.createdAt,
+        });
 
-    setExpandedQuestion(null);
+        setExpandedQuestion(null);
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-    });
-}
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+
+    async function handleStartMockInterview() {
+        if (!selectedJobId) {
+            setMockInterviewError("Please select a job first.");
+            return;
+        }
+
+        const token = getToken();
+
+        if (!token) {
+            setMockInterviewError("Please log in again.");
+            return;
+        }
+
+        setMockInterviewLoading(true);
+        setMockInterviewError("");
+        setMockInterviewEvaluation(null);
+        setMockInterviewAnswer("");
+        setMockInterviewCompleted(false);
+        setMockInterviewFinalScore(null);
+
+        try {
+            const result = await startMockInterview(
+                token,
+                selectedJobId
+            );
+
+            setMockInterview(result.data);
+        } catch (error) {
+            setMockInterviewError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to start mock interview"
+            );
+        } finally {
+            setMockInterviewLoading(false);
+        }
+    }
+
+    async function handleSubmitMockInterviewAnswer() {
+        if (!mockInterview) {
+            return;
+        }
+
+        if (!mockInterviewAnswer.trim()) {
+            setMockInterviewError("Please enter your answer.");
+            return;
+        }
+
+        const token = getToken();
+
+        if (!token) {
+            setMockInterviewError("Please log in again.");
+            return;
+        }
+
+        setMockInterviewSubmitting(true);
+        setMockInterviewError("");
+
+        try {
+            const result = await answerMockInterview(
+                token,
+                mockInterview.sessionId,
+                mockInterviewAnswer.trim()
+            );
+
+            const data = result.data;
+
+            setMockInterviewEvaluation(data.evaluation);
+
+            if (data.completed) {
+                setMockInterviewCompleted(true);
+                setMockInterviewFinalScore(data.finalScore);
+
+                const historyResult =
+                    await getMockInterviewSessions(token);
+
+                setMockInterviewHistory(
+                    historyResult.data ?? []
+                );
+            } else {
+                setMockInterview({
+                    ...mockInterview,
+                    questionIndex: data.nextQuestionIndex,
+                    question: data.nextQuestion,
+                });
+
+                setMockInterviewAnswer("");
+            }
+        } catch (error) {
+            setMockInterviewError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to submit answer"
+            );
+        } finally {
+            setMockInterviewSubmitting(false);
+        }
+    }
 
     return (
         <DashboardLayout>
