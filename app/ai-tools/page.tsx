@@ -446,21 +446,25 @@ function AIToolsContent() {
     }
 
     function openInterviewPreparation(
-        preparation: InterviewPreparationHistoryItem
-    ) {
-        setSelectedJobId(preparation.jobId);
-        setInterviewPreparation({
-            questions: preparation.questions,
-            preparationTips: preparation.preparationTips,
-            createdAt: preparation.createdAt,
-        });
-        setExpandedQuestion(null);
+    preparation: InterviewPreparationHistoryItem
+) {
+    setSelectedJobId(preparation.jobId);
 
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-        });
-    }
+    setInterviewPreparation({
+        id: preparation.id,
+        jobId: preparation.jobId,
+        questions: preparation.questions,
+        preparationTips: preparation.preparationTips,
+        createdAt: preparation.createdAt,
+    });
+
+    setExpandedQuestion(null);
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+    });
+}
 
     return (
         <DashboardLayout>

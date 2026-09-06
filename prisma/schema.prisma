@@ -28,6 +28,7 @@ model User {
   aiAnalyses            AIAnalysis[]
   resumeAnalyses        ResumeAnalysis[]
   interviewPreparations InterviewPreparation[]
+  interviewSessions     InterviewSession[]
 }
 
 model Job {
@@ -52,6 +53,7 @@ model Job {
   aiAnalyses            AIAnalysis[]
   coverLetters          CoverLetter[]
   interviewPreparations InterviewPreparation[]
+  interviewSessions     InterviewSession[]
 
   @@index([userId])
 }
@@ -145,4 +147,41 @@ model InterviewPreparation {
   @@index([userId])
   @@index([jobId])
   @@index([createdAt])
+}
+
+model InterviewSession {
+  id              String   @id @default(cuid())
+  userId          String
+  jobId           String
+  status          String   @default("IN_PROGRESS")
+  currentQuestion Int      @default(0)
+  totalQuestions  Int      @default(10)
+  finalScore      Int?
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job     Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  answers InterviewAnswer[]
+
+  @@index([userId])
+  @@index([jobId])
+}
+
+model InterviewAnswer {
+  id             String   @id @default(cuid())
+  sessionId      String
+  questionIndex  Int
+  question       String
+  candidateAnswer String
+  score          Int?
+  strengths      Json?
+  weaknesses     Json?
+  feedback       String?
+  improvedAnswer String?
+  createdAt      DateTime @default(now())
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
