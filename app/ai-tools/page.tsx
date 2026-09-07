@@ -585,26 +585,32 @@ function AIToolsContent() {
         }
     }
 
-    function openInterviewPreparation(
-        preparation: InterviewPreparationHistoryItem
-    ) {
-        setSelectedJobId(preparation.jobId);
+function openInterviewPreparation(
+    preparation: InterviewPreparationHistoryItem
+) {
+    setSelectedJobId(preparation.jobId);
 
-        setInterviewPreparation({
-            id: preparation.id,
-            jobId: preparation.jobId,
-            questions: preparation.questions,
-            preparationTips: preparation.preparationTips,
-            createdAt: preparation.createdAt,
-        });
+    setInterviewPreparation({
+        id: preparation.id,
+        jobId: preparation.jobId,
+        questions: preparation.questions,
+        preparationTips: preparation.preparationTips,
+        createdAt: preparation.createdAt,
+    });
 
-        setExpandedQuestion(null);
+    setExpandedQuestion(null);
 
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-        });
-    }
+    // Wait for React to render the preparation section,
+    // then scroll directly to it.
+    setTimeout(() => {
+        document
+            .getElementById("interview-preparation-result")
+            ?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+    }, 0);
+}
 
     async function handleStartMockInterview() {
         if (!selectedJobId) {
@@ -1454,7 +1460,7 @@ function AIToolsContent() {
                         )}
                     </section>
                     {interviewPreparation && (
-                        <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+                        <section id="interview-preparation-result" className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
                             {(() => {
                                 const selectedJob = jobs.find(
                                     (job) => job.id === selectedJobId
@@ -1638,16 +1644,14 @@ function AIToolsContent() {
                                                     ? "Generating..."
                                                     : "Regenerate Preparation"}
                                             </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setExpandedQuestion(null)
-                                                }
-                                                className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white"
-                                            >
-                                                Collapse Answers
-                                            </button>
+<button
+    type="button"
+    onClick={() => setExpandedQuestion(null)}
+    disabled={expandedQuestion === null}
+    className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+>
+    Collapse Answers
+</button>
                                         </div>
                                     </>
                                 );
