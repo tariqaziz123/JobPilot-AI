@@ -585,32 +585,32 @@ function AIToolsContent() {
         }
     }
 
-function openInterviewPreparation(
-    preparation: InterviewPreparationHistoryItem
-) {
-    setSelectedJobId(preparation.jobId);
+    function openInterviewPreparation(
+        preparation: InterviewPreparationHistoryItem
+    ) {
+        setSelectedJobId(preparation.jobId);
 
-    setInterviewPreparation({
-        id: preparation.id,
-        jobId: preparation.jobId,
-        questions: preparation.questions,
-        preparationTips: preparation.preparationTips,
-        createdAt: preparation.createdAt,
-    });
+        setInterviewPreparation({
+            id: preparation.id,
+            jobId: preparation.jobId,
+            questions: preparation.questions,
+            preparationTips: preparation.preparationTips,
+            createdAt: preparation.createdAt,
+        });
 
-    setExpandedQuestion(null);
+        setExpandedQuestion(null);
 
-    // Wait for React to render the preparation section,
-    // then scroll directly to it.
-    setTimeout(() => {
-        document
-            .getElementById("interview-preparation-result")
-            ?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-    }, 0);
-}
+        // Wait for React to render the preparation section,
+        // then scroll directly to it.
+        setTimeout(() => {
+            document
+                .getElementById("interview-preparation-result")
+                ?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+        }, 0);
+    }
 
     async function handleStartMockInterview() {
         if (!selectedJobId) {
@@ -1644,14 +1644,14 @@ function openInterviewPreparation(
                                                     ? "Generating..."
                                                     : "Regenerate Preparation"}
                                             </button>
-<button
-    type="button"
-    onClick={() => setExpandedQuestion(null)}
-    disabled={expandedQuestion === null}
-    className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
->
-    Collapse Answers
-</button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setExpandedQuestion(null)}
+                                                disabled={expandedQuestion === null}
+                                                className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                            >
+                                                Collapse Answers
+                                            </button>
                                         </div>
                                     </>
                                 );
@@ -2232,9 +2232,9 @@ function openInterviewPreparation(
 
                                                         <span
                                                             className={`rounded-full px-3 py-1 text-xs font-medium ${session.status ===
-                                                                    "COMPLETED"
-                                                                    ? "bg-emerald-950 text-emerald-400"
-                                                                    : "bg-amber-950 text-amber-400"
+                                                                "COMPLETED"
+                                                                ? "bg-emerald-950 text-emerald-400"
+                                                                : "bg-amber-950 text-amber-400"
                                                                 }`}
                                                         >
                                                             {session.status}
