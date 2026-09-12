@@ -374,10 +374,11 @@ export async function getResumeAnalyses(
 }
 
 export async function getJobRecommendations(
-  token: string
+  token: string,
+  range: "24h" | "7d" | "30d" | "all" = "7d"
 ) {
   const response = await fetch(
-    `${API_URL}/api/ai/job-recommendations`,
+    `${API_URL}/api/ai/job-recommendations?range=${range}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,

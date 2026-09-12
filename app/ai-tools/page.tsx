@@ -188,6 +188,10 @@ function AIToolsContent() {
         JobRecommendation[]
     >([]);
 
+    const [recommendationRange, setRecommendationRange] = useState<
+        "24h" | "7d" | "30d" | "all"
+    >("7d");
+
     const [recommendationsLoading, setRecommendationsLoading] =
         useState(false);
 
@@ -403,7 +407,10 @@ function AIToolsContent() {
         setRecommendationsError("");
 
         try {
-            const result = await getJobRecommendations(token);
+            const result = await getJobRecommendations(
+                token,
+                recommendationRange
+            );
 
             setRecommendations(result.data);
         } catch (error) {
@@ -2426,6 +2433,34 @@ function AIToolsContent() {
                                 <p className="mt-2 text-sm text-slate-400">
                                     Find the saved jobs that best match your skills and resume.
                                 </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <label
+                                    htmlFor="recommendation-range"
+                                    className="text-xs font-medium text-slate-500"
+                                >
+                                    Jobs from
+                                </label>
+
+                                <select
+                                    id="recommendation-range"
+                                    value={recommendationRange}
+                                    onChange={(event) => {
+                                        setRecommendationRange(
+                                            event.target.value as
+                                            | "24h"
+                                            | "7d"
+                                            | "30d"
+                                            | "all"
+                                        );
+                                    }}
+                                    className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-300 outline-none focus:border-purple-500"
+                                >
+                                    <option value="24h">Last 24 hours</option>
+                                    <option value="7d">Last 7 days</option>
+                                    <option value="30d">Last 30 days</option>
+                                    <option value="all">All saved jobs</option>
+                                </select>
                             </div>
 
                             <button
