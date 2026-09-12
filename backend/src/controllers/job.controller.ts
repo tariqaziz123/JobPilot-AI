@@ -94,7 +94,7 @@ export const getJobs = async (
 };
 
 export const updateJobStatus = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ) => {
   try {
@@ -123,9 +123,19 @@ export const updateJobStatus = async (
       });
     }
 
-    const job = await prisma.job.findUnique({
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const job = await prisma.job.findFirst({
       where: {
         id,
+        userId,
       },
     });
 
