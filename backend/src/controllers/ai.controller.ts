@@ -292,6 +292,35 @@ export const getResumeAnalyses = async (
   }
 };
 
+function getRecommendationStartDate(
+  range: string
+): Date {
+  const now = new Date();
+
+  switch (range) {
+    case "24h":
+      return new Date(
+        now.getTime() -
+          24 * 60 * 60 * 1000
+      );
+
+    case "7d":
+      return new Date(
+        now.getTime() -
+          7 * 24 * 60 * 60 * 1000
+      );
+
+    case "30d":
+      return new Date(
+        now.getTime() -
+          30 * 24 * 60 * 60 * 1000
+      );
+
+    default:
+      return new Date(0);
+  }
+}
+
 export const getJobRecommendations = async (
   req: AuthRequest,
   res: Response
@@ -303,6 +332,26 @@ export const getJobRecommendations = async (
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
+      });
+    }
+
+    const range =
+      typeof req.query.range === "string"
+        ? req.query.range
+        : "7d";
+
+    const allowedRanges = [
+      "24h",
+      "7d",
+      "30d",
+      "all",
+    ];
+
+    if (!allowedRanges.includes(range)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid range. Use 24h, 7d, 30d, or all",
       });
     }
 
@@ -321,12 +370,21 @@ export const getJobRecommendations = async (
         where: {
           userId,
           status: "SAVED",
+          ...(range !== "all" && {
+            createdAt: {
+              gte: getRecommendationStartDate(range),
+            },
+          }),
         },
         select: {
           id: true,
           title: true,
           company: true,
           description: true,
+          location: true,
+          jobUrl: true,
+          source: true,
+          createdAt: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -360,6 +418,17 @@ export const getJobRecommendations = async (
       });
     }
 
+    const jobsWithDescriptions = jobs.filter(
+      (job) => job.description?.trim()
+    );
+
+    if (jobsWithDescriptions.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
     const candidateProfile = `
 Candidate Skills:
 ${user.skills.join(", ")}
@@ -370,11 +439,14 @@ ${user.resumeText ?? "Not provided"}
 
     const recommendations = await recommendJobs(
       candidateProfile,
-      jobs
+      jobsWithDescriptions
     );
 
     const jobMap = new Map(
-      jobs.map((job) => [job.id, job])
+      jobsWithDescriptions.map((job) => [
+        job.id,
+        job,
+      ])
     );
 
     const result = recommendations
@@ -394,6 +466,7 @@ ${user.resumeText ?? "Not provided"}
 
     return res.status(200).json({
       success: true,
+      range,
       data: result,
     });
   } catch (error) {
@@ -409,7 +482,6 @@ ${user.resumeText ?? "Not provided"}
     });
   }
 };
-
 
 export const generateCoverLetterController = async (
   req: AuthRequest,
